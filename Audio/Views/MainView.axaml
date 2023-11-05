@@ -24,9 +24,9 @@
 			  <MenuItem Header="Load VO" Click="LoadVO_Click"/>
 		  </MenuItem>
 	  </Menu>
-	  <Grid RowDefinitions="Auto,*,25">
+	  <Grid RowDefinitions="Auto,*,25" DragDrop.AllowDrop="True">
 		  <TextBox Grid.Row="0" Text="{Binding SearchText}" Watermark="Search" KeyDown="SearchText_KeyDown"/>
-		  <TreeDataGrid Grid.Row="1" Source="{Binding EntrySource}" KeyDown="EntryDataGrid_KeyDown" PointerPressed="EntryDataGrid_PointerPressed" AutoDragDropRows="True">
+		  <TreeDataGrid Grid.Row="1" Source="{Binding EntrySource}" KeyDown="EntryDataGrid_KeyDown" PointerPressed="EntryDataGrid_PointerPressed">
 			  <TreeDataGrid.ContextMenu>
 				  <ContextMenu>
 					  <MenuItem Header="Copy text" Click="EntryDataGridCopyText_Click"/>

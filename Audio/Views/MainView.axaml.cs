@@ -10,6 +10,8 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.IO;
 
 namespace Audio.Views;
 
@@ -20,6 +22,31 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
     {
         InitializeComponent();
         ViewModel = new MainViewModel();
+        AddHandler(DragDrop.DragEnterEvent, MainView_DragEnter);
+        AddHandler(DragDrop.DropEvent, MainView_Drop);
+    }
+    private void MainView_DragEnter(object? sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataFormats().Contains("Files"))
+        {
+            e.DragEffects = DragDropEffects.Move;
+        }
+    }
+    private void MainView_Drop(object? sender, DragEventArgs e)
+    {
+        var files = e.Data.Get("Files");
+        if (files is IEnumerable<IStorageItem> storageFiles)
+        {
+            var paths = storageFiles.Select(x => x.TryGetLocalPath()).ToArray();
+            if (paths.Length == 1 && Directory.Exists(paths[0]))
+            {
+                ViewModel.LoadFolder(paths[0]);
+            }
+            if (paths.Length > 0 && !paths.Any(Directory.Exists))
+            {
+                ViewModel.LoadFiles(paths);
+            }
+        }
     }
     private async Task<string[]> PickFileInternal(bool allowMultiple = false, FilePickerFileType[] types = null)
     {
@@ -148,6 +175,19 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
         if (e.KeyModifiers.Equals(KeyModifiers.Control) && e.Key == Key.A)
         {
             ViewModel.SelectAll();
+        }
+    }
+
+    private void TreeDataGrid_RowDrop(object? sender, TreeDataGridRowDragEventArgs e)
+    {
+        var files = e.Inner.Data.Get("Files");
+        if (files is IEnumerable<IStorageItem> storageFiles)
+        {
+            var paths = storageFiles.Select(x => x.TryGetLocalPath()).ToArray();
+            if (paths.Length > 0)
+            {
+                ViewModel.LoadFiles(paths);
+            }
         }
     }
 }

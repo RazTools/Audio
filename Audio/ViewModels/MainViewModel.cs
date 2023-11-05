@@ -14,6 +14,8 @@ using Avalonia.Threading;
 using System.Text.RegularExpressions;
 using Avalonia.Data;
 using Audio.Models.Utils;
+using Avalonia.Input;
+using Avalonia.Platform.Storage;
 
 namespace Audio.ViewModels;
 
@@ -60,7 +62,6 @@ public partial class MainViewModel : ViewModelBase
     public FlatTreeDataGridSource<Entry> EntrySource { get; set; }
     public string ClipboardText { get; set; }
     
-
     public MainViewModel()
     {
         SearchText = "";
@@ -190,7 +191,6 @@ public partial class MainViewModel : ViewModelBase
 
         var matched = 0;
         var externals = Entries.Items.OfType<External>().ToArray();
-
         ProgressHelper.Reset();
         for (int i = 0; i < externals.Length; i++)
         {
