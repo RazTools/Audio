@@ -124,6 +124,26 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
         }
     }
 
+    private async void ExportAudios_Click(object? sender, RoutedEventArgs e)
+    {
+        var folder = await PickFolder();
+
+        if (!string.IsNullOrEmpty(folder))
+        {
+            ViewModel.ExportAudios(folder);
+        }
+    }
+
+    private async void ExportBanks_Click(object? sender, RoutedEventArgs e)
+    {
+        var folder = await PickFolder();
+
+        if (!string.IsNullOrEmpty(folder))
+        {
+            ViewModel.ExportBanks(folder);
+        }
+    }
+
     private async void ExportAll_Click(object? sender, RoutedEventArgs e)
     {
         var folder = await PickFolder();

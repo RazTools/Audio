@@ -98,6 +98,8 @@ public partial class MainViewModel : ViewModelBase
         await Task.Run(() => LoadPaths(paths));
     }
     public async void ExportSelectedEntries(string outputDir) => await Task.Run(() => Export(SelectedEntries, outputDir));
+    public async void ExportAudios(string outputDir) => await Task.Run(() => Export(Entries.Items.Where(x => x is not Bank).ToArray(), outputDir));
+    public async void ExportBanks(string outputDir) => await Task.Run(() => Export(Entries.Items.Where(x => x is Bank).ToArray(), outputDir));
     public async void ExportAll(string outputDir) => await Task.Run(() => Export(Entries.Items.ToArray(), outputDir));
     public async void LoadVO(string path) => await Task.Run(() => LoadVOInternal(path));
 

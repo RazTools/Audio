@@ -19,6 +19,8 @@
 			  <MenuItem Header="Load File(s)" Click="LoadFile_Click"/>
 			  <MenuItem Header="Load Folder" Click="LoadFolder_Click"/>
 			  <Separator/>
+			  <MenuItem Header="Export Sounds" Click="ExportAudios_Click"/>
+			  <MenuItem Header="Export Banks" Click="ExportBanks_Click"/>
 			  <MenuItem Header="Export All" Click="ExportAll_Click"/>
 			  <Separator/>
 			  <MenuItem Header="Load VO" Click="LoadVO_Click"/>
