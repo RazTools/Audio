@@ -96,7 +96,17 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
             ViewModel.LoadVO(file);
         }
     }
-    
+
+    private async void ExportAll_Click(object? sender, RoutedEventArgs e)
+    {
+        var folder = await PickFolder();
+
+        if (!string.IsNullOrEmpty(folder))
+        {
+            ViewModel.ExportAll(folder);
+        }
+    }
+
     private void EntryDataGrid_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
         var point = e.GetCurrentPoint(this);

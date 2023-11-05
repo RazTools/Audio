@@ -161,18 +161,22 @@ public partial class MainViewModel : ViewModelBase
         var paths = Directory.GetFiles(folder, "*.pck", SearchOption.AllDirectories);
         await Task.Run(() => LoadPaths(paths));
     }
+    public async void ExportSelectedEntries(string outputDir) => await Task.Run(() => Export(SelectedEntries, outputDir));
+    public async void ExportAll(string outputDir) => await Task.Run(() => Export(EntrySource.Items, outputDir));
 
-    public void ExportSelectedEntries(string outputDir)
+    public void Export(IEnumerable<Entry> items, string outputDir)
     {
-        StatusText = $"Exporting {SelectedEntries.Count} files";
+        var count = items.Count();
 
-        foreach(var entry in SelectedEntries)
+        StatusText = $"Exporting {count} files...";
+
+        foreach(var entry in items)
         {
             var outputPath = Path.Combine(outputDir, entry.Location);
             DumpEntry(entry, outputPath);
         }
 
-        StatusText = $"{SelectedEntries.Count} files exported successfully !!";
+        StatusText = $"{count} files exported successfully !!";
     }
     
     private void DumpEntry(Entry entry, string outputPath)
