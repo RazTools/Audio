@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Audio.ViewModels"
+			 xmlns:models="clr-namespace:Audio.Models.Entries"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="Audio.Views.MainView"
+             x:DataType="vm:MainViewModel">
+  <Design.DataContext>
+    <!-- This only sets the DataContext for the previewer in an IDE,
+         to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+    <vm:MainViewModel />
+  </Design.DataContext>
+
+  <DockPanel>
+	  <Menu DockPanel.Dock="Top">
+		  <MenuItem Header="File">
+			  <MenuItem Header="Load File(s)" Click="LoadFile_Click"/>
+			  <MenuItem Header="Load Folder" Click="LoadFolder_Click"/>
+			  <Separator/>
+			  <MenuItem Header="Load VO" Click="LoadVO_Click"/>
+		  </MenuItem>
+	  </Menu>
+	  <Grid RowDefinitions="Auto,*,25">
+		  <TextBox Grid.Row="0" Text="{Binding SearchText}" Watermark="Search" KeyDown="SearchText_KeyDown"/>
+		  <TreeDataGrid Grid.Row="1" Source="{Binding EntrySource}" KeyDown="EntryDataGrid_KeyDown" PointerPressed="EntryDataGrid_PointerPressed">
+			  <TreeDataGrid.ContextMenu>
+				  <ContextMenu>
+					  <MenuItem Header="Copy text" Click="EntryDataGridCopyText_Click"/>
+					  <MenuItem Header="Export selected entries" Click="EntryDataGridExportSeleted_Click"/>
+				  </ContextMenu>
+			  </TreeDataGrid.ContextMenu>
+		  </TreeDataGrid>
+		  <Border Grid.Row="2" BorderThickness="1" BorderBrush="White">
+			  <SelectableTextBlock Text="{Binding StatusText}"/>
+		  </Border>
+	  </Grid>
+  </DockPanel>
+</UserControl>
