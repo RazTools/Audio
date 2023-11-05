@@ -1,13 +1,11 @@
-﻿using Avalonia.ReactiveUI;
-using Audio.ViewModels;
+﻿using Avalonia.Controls;
 
 namespace Audio.Views;
 
-public partial class MainWindow : ReactiveWindow<MainViewModel>
+public partial class MainWindow : Window
 {
     public MainWindow()
     {
         InitializeComponent();
-        ViewModel = new MainViewModel();
     }
 }

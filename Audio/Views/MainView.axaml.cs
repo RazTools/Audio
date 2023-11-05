@@ -19,7 +19,7 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
     public MainView()
     {
         InitializeComponent();
-        ViewModel ??= new MainViewModel();
+        ViewModel = new MainViewModel();
     }
     private async Task<string[]> PickFileInternal(bool allowMultiple = false, FilePickerFileType[] types = null)
     {

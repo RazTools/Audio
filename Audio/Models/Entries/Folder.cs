@@ -19,11 +19,20 @@ public record Folder
 
         reader.BaseStream.Seek(baseOffset + folder.Offset, SeekOrigin.Begin);
 
+        var isUTF16 = true;
         var sb = new StringBuilder();
         while (reader.PeekChar() != '\0')
         {
             sb.Append(reader.ReadChar());
-            reader.ReadChar();
+            if (isUTF16 && reader.PeekChar() != '\0')
+            {
+                isUTF16 = false;
+            }
+
+            if (isUTF16)
+            {
+                reader.ReadChar();
+            }
         }
 
         folder.Name = sb.ToString();

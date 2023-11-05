@@ -26,7 +26,7 @@
 	  </Menu>
 	  <Grid RowDefinitions="Auto,*,25">
 		  <TextBox Grid.Row="0" Text="{Binding SearchText}" Watermark="Search" KeyDown="SearchText_KeyDown"/>
-		  <TreeDataGrid Grid.Row="1" Source="{Binding EntrySource}" KeyDown="EntryDataGrid_KeyDown" PointerPressed="EntryDataGrid_PointerPressed">
+		  <TreeDataGrid Grid.Row="1" Source="{Binding EntrySource}" KeyDown="EntryDataGrid_KeyDown" PointerPressed="EntryDataGrid_PointerPressed" AutoDragDropRows="True">
 			  <TreeDataGrid.ContextMenu>
 				  <ContextMenu>
 					  <MenuItem Header="Copy text" Click="EntryDataGridCopyText_Click"/>
@@ -34,9 +34,12 @@
 				  </ContextMenu>
 			  </TreeDataGrid.ContextMenu>
 		  </TreeDataGrid>
-		  <Border Grid.Row="2" BorderThickness="1" BorderBrush="White">
-			  <SelectableTextBlock Text="{Binding StatusText}"/>
-		  </Border>
+		  <Grid Grid.Row="2" ColumnDefinitions="*,*">
+			  <ProgressBar Grid.Column="0" Minimum="0" Maximum="100" Value="{Binding ProgressValue}" ShowProgressText="True" VerticalAlignment="Stretch"/> 
+			  <Border Grid.Column="1" BorderThickness="1" BorderBrush="White">
+				  <SelectableTextBlock Text="{Binding StatusText}"/>
+			  </Border>
+		  </Grid>
 	  </Grid>
   </DockPanel>
 </UserControl>
