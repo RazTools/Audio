@@ -24,6 +24,7 @@
 			  <MenuItem Header="Export All" Click="ExportAll_Click"/>
 			  <Separator/>
 			  <MenuItem Header="Load VO" Click="LoadVO_Click"/>
+			  <MenuItem Header="Generate TXTP" Click="GenerateTXTP_Click"/>
 		  </MenuItem>
 	  </Menu>
 	  <Grid RowDefinitions="Auto,*,25" DragDrop.AllowDrop="True">

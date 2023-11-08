@@ -56,13 +56,10 @@ public record Bank : Entry
         return bank;
     }
 
-    public void ParseChunks()
+    public void ParseChunks(BinaryReader reader)
     {
-        var bytes = GetData();
-
-        using var ms = new MemoryStream(bytes);
-        using var reader = new BinaryReader(ms);
-        while (reader.BaseStream.Position != reader.BaseStream.Length)
+        reader.BaseStream.Position = Offset;
+        while (reader.BaseStream.Position < Offset + Size)
         {
             var chunk = Chunk.ParseChunk(reader);
             Chunks.Add(chunk.Signature, chunk);

@@ -51,6 +51,11 @@ public record Package : Chunk
         ParseBanks(reader);
         ParseSounds(reader);
         ParseExternals(reader);
+
+        foreach(var bank in Banks)
+        {
+            bank.ParseChunks(reader);
+        }
     }
 
     private void ParseFolders(BinaryReader reader)

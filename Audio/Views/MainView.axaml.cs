@@ -197,16 +197,17 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
             ViewModel.SelectAll();
         }
     }
-
-    private void TreeDataGrid_RowDrop(object? sender, TreeDataGridRowDragEventArgs e)
+    private async void GenerateTXTP_Click(object? sender, RoutedEventArgs e)
     {
-        var files = e.Inner.Data.Get("Files");
-        if (files is IEnumerable<IStorageItem> storageFiles)
+        var wwiser = await PickFile(new FilePickerFileType[] { new FilePickerFileType("wwiser") { Patterns = new[] { "wwiser.py" } } });
+
+        if (!string.IsNullOrEmpty(wwiser))
         {
-            var paths = storageFiles.Select(x => x.TryGetLocalPath()).ToArray();
-            if (paths.Length > 0)
+            var file = await PickFile(new FilePickerFileType[] { FilePickerFileTypes.TextPlain });
+
+            if (!string.IsNullOrEmpty(file))
             {
-                ViewModel.LoadFiles(paths);
+                ViewModel.GenerateTXTP(wwiser, file);
             }
         }
     }

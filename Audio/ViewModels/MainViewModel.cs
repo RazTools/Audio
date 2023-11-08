@@ -14,8 +14,7 @@ using Avalonia.Threading;
 using System.Text.RegularExpressions;
 using Avalonia.Data;
 using Audio.Models.Utils;
-using Avalonia.Input;
-using Avalonia.Platform.Storage;
+using System.Diagnostics;
 
 namespace Audio.ViewModels;
 
@@ -26,7 +25,7 @@ public partial class MainViewModel : ViewModelBase
     private string _statusText;
     private double _progressValue;
     public ReadOnlyObservableCollection<Entry> FilteredEntries => _filteredEntries;
-    public IReadOnlyList<Entry> SelectedEntries => EntrySource.RowSelection!.SelectedItems;
+    public List<Entry> SelectedEntries => EntrySource.RowSelection!.SelectedItems.ToList();
     public string SearchText
     {
         get => _searchText;
@@ -61,7 +60,6 @@ public partial class MainViewModel : ViewModelBase
     public SourceList<Entry> Entries { get; set; }
     public FlatTreeDataGridSource<Entry> EntrySource { get; set; }
     public string ClipboardText { get; set; }
-    
     public MainViewModel()
     {
         SearchText = "";
@@ -98,11 +96,11 @@ public partial class MainViewModel : ViewModelBase
         await Task.Run(() => LoadPaths(paths));
     }
     public async void ExportSelectedEntries(string outputDir) => await Task.Run(() => Export(SelectedEntries, outputDir));
-    public async void ExportAudios(string outputDir) => await Task.Run(() => Export(Entries.Items.Where(x => x is not Bank).ToArray(), outputDir));
-    public async void ExportBanks(string outputDir) => await Task.Run(() => Export(Entries.Items.Where(x => x is Bank).ToArray(), outputDir));
-    public async void ExportAll(string outputDir) => await Task.Run(() => Export(Entries.Items.ToArray(), outputDir));
+    public async void ExportAudios(string outputDir) => await Task.Run(() => Export(Entries.Items.Where(x => x is not Bank).ToList(), outputDir));
+    public async void ExportBanks(string outputDir) => await Task.Run(() => Export(Entries.Items.Where(x => x is Bank).ToList(), outputDir));
+    public async void ExportAll(string outputDir) => await Task.Run(() => Export(Entries.Items.ToList(), outputDir));
     public async void LoadVO(string path) => await Task.Run(() => LoadVOInternal(path));
-
+    public async void GenerateTXTP(string wwiser, string file) => await Task.Run(() => GenerateTXTPInternal(wwiser, file));
     public void SelectAll()
     {
         for (int i = 0; i < EntrySource.Rows.Count; i++)
@@ -132,15 +130,19 @@ public partial class MainViewModel : ViewModelBase
             ProgressHelper.Report(i, paths.Length);
         }
 
-        var banks = Packages.SelectMany(x => x.Banks).Cast<Entry>().ToList();
+        var banks = Packages.SelectMany(x => x.Banks).Cast<Bank>().ToList();
 
         StatusText = $"Processing {banks.Count} banks...";
 
         ProgressHelper.Reset();
         for (int i = 0; i < banks.Count; i++)
         {
-            var bank = banks[i] as Bank;
-            ParseChunks(bank);
+            var bank = banks[i];
+            Entries.AddRange(bank.EmbeddedSounds);
+            foreach (var kv in bank.BankIDToName)
+            {
+                Package.BankIDToNames.TryAdd(kv.Key, kv.Value);
+            }
             ProgressHelper.Report(i, banks.Count);
         }
 
@@ -149,7 +151,7 @@ public partial class MainViewModel : ViewModelBase
         ProgressHelper.Reset();
         for (int i = 0; i < banks.Count; i++)
         {
-            var bank = banks[i] as Bank;
+            var bank = banks[i];
             if (Package.BankIDToNames.TryGetValue(bank.ID, out var name))
             {
                 bank.Name = name;
@@ -208,7 +210,7 @@ public partial class MainViewModel : ViewModelBase
         Refresh();
         StatusText = $"VO file {Path.GetFileName(path)} Loaded Successfully, Matched {matched} out of {externals.Length} externals !!";
     }
-    private void Export(IReadOnlyList<Entry> entries, string outputDir)
+    private void Export(List<Entry> entries, string outputDir)
     {
         var count = entries.Count();
 
@@ -232,6 +234,19 @@ public partial class MainViewModel : ViewModelBase
         Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
         using var fs = File.OpenWrite(outputPath);
         fs.Write(bytes);
+    }
+    private void DumpTXTH(Entry entry, string outputPath)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
+        File.CreateText(outputPath).Close();
+
+        using var fs = File.OpenWrite($"{outputPath}.txth");
+        using var writer = new StreamWriter(fs);
+        writer.WriteLine($"body_file = {Path.GetRelativePath(outputPath, entry.Source)}");
+        writer.WriteLine($"subfile_offset = {entry.Offset}");
+        writer.WriteLine($"subfile_size = {entry.Size}");
+        writer.WriteLine("subfile_extension = wem");
+        writer.Close();
     }
     private bool EntryFilter(Entry entry)
     {
@@ -257,13 +272,128 @@ public partial class MainViewModel : ViewModelBase
         var package = await Task.Run(() => Package.Parse(path));
         return package;
     }
-    private void ParseChunks(Bank bank)
+    private async void GenerateTXTPInternal(string wwiser, string file)
     {
-        bank.ParseChunks();
-        Entries.AddRange(bank.EmbeddedSounds);
-        foreach(var kv in bank.BankIDToName)
+        StatusText = "Exporting banks temporarly to temp folder...";
+
+        var tempDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "temp");
+        Directory.CreateDirectory(tempDir);
+
+        var banks = SelectedEntries.OfType<Bank>().ToList();
+        if (banks.Count == 0)
         {
-            Package.BankIDToNames.TryAdd(kv.Key, kv.Value);
+            StatusText = "No selected banks, processing all banks...";
+            banks = Entries.Items.OfType<Bank>().ToList();
+        }
+        if (banks.Count == 0)
+        {
+            StatusText = "No banks found !!";
+            return;
+        }
+        foreach (var bank in banks)
+        {
+            var outputPath = Path.Combine(tempDir, bank.Location);
+            DumpEntry(bank, outputPath);
+        }
+
+        var folders = banks.SelectMany(x => x.Package.Folders.Values).Distinct().ToList();
+
+        if (folders.Count > 1)
+        {
+            foreach (var folder in folders)
+            {
+                StatusText = $"Invoking wwiser for language {folder}...";
+
+                var txtpDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "txtp", folder);
+                Directory.CreateDirectory(Path.GetDirectoryName(txtpDir));
+
+                var startInfo = new ProcessStartInfo();
+                startInfo.FileName = "python";
+                startInfo.Arguments = string.Join(' ', new string[] { wwiser, Path.Combine(tempDir, "**/*.bnk"), "-g", "-gbs", "-te", "-nl", file, "-gl", folder, "-go", txtpDir });
+                startInfo.UseShellExecute = false;
+                startInfo.RedirectStandardOutput = true;
+                using var process = Process.Start(startInfo);
+                process.WaitForExit();
+
+                ExportTXTP(banks, txtpDir);
+            }
+        }
+        else
+        {
+            StatusText = "Invoking wwiser...";
+
+            var txtpDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "txtp");
+
+            var startInfo = new ProcessStartInfo();
+            startInfo.FileName = "python";
+            startInfo.Arguments = string.Join(' ', new string[] { wwiser, Path.Combine(tempDir, "**/*.bnk"), "-g", "-gbs", "-te", "-nl", file });
+            startInfo.UseShellExecute = false;
+            startInfo.RedirectStandardOutput = true;
+            using var process = Process.Start(startInfo);
+            process.WaitForExit();
+
+            ExportTXTP(banks, txtpDir);
+        }
+
+        Directory.Delete(tempDir, true);
+
+        StatusText = "TXTP generated successfully !!";
+    }
+
+    private void ExportTXTP(List<Bank> banks, string txtpDir)
+    {
+        var sounds = Packages.SelectMany(x => x.Sounds).Cast<Sound>().ToList();
+
+        var wemDir = Path.Combine(txtpDir, "wem");
+
+        if (!Directory.Exists(txtpDir))
+        {
+            StatusText = "No TXTP found !!";
+            return;
+        }
+
+        var files = Directory.GetFiles(txtpDir, "*.txtp");
+        StatusText = $"Found {files.Length} TXTP, proccessing...";
+        foreach (var f in files)
+        {
+            var lines = File.ReadAllLines(f);
+            foreach (var line in lines)
+            {
+                if (line.StartsWith('#'))
+                    break;
+
+                var match = Regex.Match(line, "wem/(\\d+).wem");
+                if (match.Success)
+                {
+                    var soundIDString = match.Groups[1].Value;
+                    if (ulong.TryParse(soundIDString, out var soundID))
+                    {
+                        var sound = sounds.FirstOrDefault(x => x.ID == soundID);
+                        if (sound != null)
+                        {
+                            var outputPath = Path.Combine(wemDir, $"{soundID}.wem");
+                            DumpTXTH(sound, outputPath);
+                            continue;
+                        }
+                    }
+
+                    var embeddedIDString = match.Groups[1].Value;
+                    if (ulong.TryParse(embeddedIDString, out var embeddedID))
+                    {
+                        var bank = banks.FirstOrDefault(x => x.EmbeddedSounds.Any(x => x.ID == embeddedID));
+                        if (bank != null)
+                        {
+                            var embeddedSound = bank.EmbeddedSounds.FirstOrDefault(x => x.ID == embeddedID);
+                            if (embeddedSound != null)
+                            {
+                                var outputPath = Path.Combine(wemDir, $"{embeddedID}.wem");
+                                DumpTXTH(embeddedSound, outputPath);
+                                continue;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
