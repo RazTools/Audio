@@ -13,7 +13,7 @@ public record Entry
     public EntryType Type { get; }
     public string Source => Package.Path;
     public virtual string Location => $"{FolderName}/{Name}";
-    public virtual string FolderName => Package.Folders[Folder];
+    public virtual string FolderName => Package.FoldersDict[Folder];
 
     public Entry(EntryType type)
     {

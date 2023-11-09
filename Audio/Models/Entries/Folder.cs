@@ -7,6 +7,7 @@ public record Folder
     public uint ID { get; set; }
     public uint Offset { get; set; }
     public string Name { get; set; }
+    public bool IsChecked { get; set; }
 
     public static Folder Parse(BinaryReader reader, long baseOffset)
     {

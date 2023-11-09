@@ -14,7 +14,8 @@ public record Package : Chunk
     public long BankTableSize { get; set; }
     public long SoundTableSize { get; set; }
     public long ExternalTableSize { get; set; }
-    public Dictionary<uint, string> Folders { get; set; }
+    public Dictionary<uint, string> FoldersDict { get; set; }
+    public Folder[] Folders { get; set; }
     public Bank[] Banks { get; set; }
     public Sound[] Sounds { get; set; }
     public External[] Externals { get; set; }
@@ -63,13 +64,15 @@ public record Package : Chunk
         var offset = reader.BaseStream.Position;
 
         var count = reader.ReadInt32();
-        Folders = new Dictionary<uint, string>(count);
+        Folders = new Folder[count];
+        FoldersDict = new Dictionary<uint, string>(count);
         for (var i = 0; i < count; i++)
         {
             var folder = Folder.Parse(reader, offset);
             try
             {
-                Folders.Add(folder.ID, folder.Name);
+                Folders[i] = folder;
+                FoldersDict.Add(folder.ID, folder.Name);
             }
             catch (ArgumentException)
             {

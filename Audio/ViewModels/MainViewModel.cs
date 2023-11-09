@@ -58,6 +58,7 @@ public partial class MainViewModel : ViewModelBase
     }
     public List<Package> Packages { get; set; }
     public SourceList<Entry> Entries { get; set; }
+    public ObservableCollection<Folder> Folders { get; set; }
     public FlatTreeDataGridSource<Entry> EntrySource { get; set; }
     public string ClipboardText { get; set; }
     public MainViewModel()
@@ -70,6 +71,7 @@ public partial class MainViewModel : ViewModelBase
 
         Packages = new List<Package>();
         Entries = new SourceList<Entry>();
+        Folders = new ObservableCollection<Folder>();
         EntrySource = new FlatTreeDataGridSource<Entry>(Array.Empty<Entry>())
         {
             Columns =
@@ -117,6 +119,7 @@ public partial class MainViewModel : ViewModelBase
     {
         Entries.Clear();
         Packages.Clear();
+        Folders.Clear();
         Package.BankIDToNames.Clear();
 
         StatusText = $"Loading {paths.Length} files...";
@@ -129,6 +132,8 @@ public partial class MainViewModel : ViewModelBase
             Packages.Add(package);
             ProgressHelper.Report(i, paths.Length);
         }
+
+        Folders.AddRange(Packages.SelectMany(x => x.Folders).DistinctBy(x => x.Name).ToList());
 
         var banks = Packages.SelectMany(x => x.Banks).Cast<Bank>().ToList();
 
@@ -296,20 +301,21 @@ public partial class MainViewModel : ViewModelBase
             DumpEntry(bank, outputPath);
         }
 
-        var folders = banks.SelectMany(x => x.Package.Folders.Values).Distinct().ToList();
-
-        if (folders.Count > 1)
+        if (Folders.Any(x => x.IsChecked))
         {
-            foreach (var folder in folders)
+            foreach (var folder in Folders)
             {
-                StatusText = $"Invoking wwiser for language {folder}...";
+                if (!folder.IsChecked)
+                    continue;
 
-                var txtpDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "txtp", folder);
+                StatusText = $"Invoking wwiser for language {folder.Name}...";
+
+                var txtpDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "txtp", folder.Name);
                 Directory.CreateDirectory(Path.GetDirectoryName(txtpDir));
 
                 var startInfo = new ProcessStartInfo();
                 startInfo.FileName = "python";
-                startInfo.Arguments = string.Join(' ', new string[] { wwiser, Path.Combine(tempDir, "**/*.bnk"), "-g", "-gbs", "-te", "-nl", file, "-gl", folder, "-go", txtpDir });
+                startInfo.Arguments = string.Join(' ', new string[] { wwiser, Path.Combine(tempDir, "**/*.bnk"), "-g", "-gbs", "-te", "-nl", file, "-gl", folder.Name, "-go", txtpDir });
                 startInfo.UseShellExecute = false;
                 startInfo.RedirectStandardOutput = true;
                 using var process = Process.Start(startInfo);
