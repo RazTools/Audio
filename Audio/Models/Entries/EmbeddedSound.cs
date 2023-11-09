@@ -22,6 +22,5 @@ public record EmbeddedSound : Entry
         Bank = bank;
         Folder = bank.Folder;
         Package = bank.Package;
-        Offset += bank.Offset;
     }
 }

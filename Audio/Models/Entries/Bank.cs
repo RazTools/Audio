@@ -21,8 +21,11 @@ public record Bank : Entry
                 {
                     foreach(var embeddedSound in didx.EmbeddedSounds)
                     {
-                        embeddedSound.SetParent(this); 
-                        embeddedSound.Offset += data.Offset;
+                        if (embeddedSound.Bank == null)
+                        {
+                            embeddedSound.SetParent(this);
+                            embeddedSound.Offset += data.Offset;
+                        }
                     }
                     return didx.EmbeddedSounds;
                 }
