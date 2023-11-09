@@ -9,3 +9,7 @@ How to use:
 - Use `vgmstreamm` or it's pluging with `foobar2000`.
 
 `Load VO` accepts a `.txt` file with list of external names.
+`Generate TXTP` accepts `.txt` file with list of event names.
+
+Special Thanks To:
+bnnm: [wwiser](https://github.com/bnnm/wwiser)
