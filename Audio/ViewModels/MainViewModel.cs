@@ -316,8 +316,7 @@ public partial class MainViewModel : ViewModelBase
                 var startInfo = new ProcessStartInfo();
                 startInfo.FileName = "python";
                 startInfo.Arguments = string.Join(' ', new string[] { wwiser, Path.Combine(tempDir, "**/*.bnk"), "-g", "-gbs", "-te", "-nl", file, "-gl", folder.Name, "-go", txtpDir });
-                startInfo.UseShellExecute = false;
-                startInfo.RedirectStandardOutput = true;
+                startInfo.UseShellExecute = true;
                 using var process = Process.Start(startInfo);
                 process.WaitForExit();
 
@@ -333,8 +332,7 @@ public partial class MainViewModel : ViewModelBase
             var startInfo = new ProcessStartInfo();
             startInfo.FileName = "python";
             startInfo.Arguments = string.Join(' ', new string[] { wwiser, Path.Combine(tempDir, "**/*.bnk"), "-g", "-gbs", "-te", "-nl", file });
-            startInfo.UseShellExecute = false;
-            startInfo.RedirectStandardOutput = true;
+            startInfo.UseShellExecute = true;
             using var process = Process.Start(startInfo);
             process.WaitForExit();
 
