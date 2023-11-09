@@ -26,6 +26,7 @@
 		  <MenuItem Header="Options">
 			  <MenuItem Header="Load VO" Click="LoadVO_Click"/>
 			  <MenuItem Header="Generate TXTP" Click="GenerateTXTP_Click"/>
+			  <CheckBox Content="Export raw audio" IsChecked="{Binding RawAudio}"/>
 			  <Separator/>
 			  <ItemsControl ItemsSource="{Binding Folders}">
 				  <ItemsControl.ItemTemplate>

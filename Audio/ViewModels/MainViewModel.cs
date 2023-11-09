@@ -61,6 +61,7 @@ public partial class MainViewModel : ViewModelBase
     public ObservableCollection<Folder> Folders { get; set; }
     public FlatTreeDataGridSource<Entry> EntrySource { get; set; }
     public string ClipboardText { get; set; }
+    public bool RawAudio { get; set; }
     public MainViewModel()
     {
         SearchText = "";
@@ -330,7 +331,7 @@ public partial class MainViewModel : ViewModelBase
                 using var process = Process.Start(startInfo);
                 process.WaitForExit();
 
-                ExportTXTP(banks, txtpDir);
+                Export(banks, txtpDir, RawAudio ? DumpEntry : DumpTXTH);
             }
         }
         else
@@ -352,15 +353,15 @@ public partial class MainViewModel : ViewModelBase
             using var process = Process.Start(startInfo);
             process.WaitForExit();
 
-            ExportTXTP(banks, txtpDir);
+
+            Export(banks, txtpDir, RawAudio ? DumpEntry : DumpTXTH);
         }
 
         Directory.Delete(tempDir, true);
 
         StatusText = "TXTP generated successfully !!";
     }
-
-    private void ExportTXTP(List<Bank> banks, string txtpDir)
+    private void Export(List<Bank> banks, string txtpDir, Action<Entry, string> exportAction)
     {
         var sounds = Packages.SelectMany(x => x.Sounds).Cast<Sound>().ToList();
 
@@ -392,7 +393,7 @@ public partial class MainViewModel : ViewModelBase
                         if (sound != null)
                         {
                             var outputPath = Path.Combine(wemDir, $"{soundID}.wem");
-                            DumpTXTH(sound, outputPath);
+                            exportAction(sound, outputPath);
                             continue;
                         }
                     }
@@ -407,7 +408,7 @@ public partial class MainViewModel : ViewModelBase
                             if (embeddedSound != null)
                             {
                                 var outputPath = Path.Combine(wemDir, $"{embeddedID}.wem");
-                                DumpTXTH(embeddedSound, outputPath);
+                                exportAction(embeddedSound, outputPath);
                                 continue;
                             }
                         }
