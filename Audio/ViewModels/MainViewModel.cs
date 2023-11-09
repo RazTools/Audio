@@ -315,7 +315,17 @@ public partial class MainViewModel : ViewModelBase
 
                 var startInfo = new ProcessStartInfo();
                 startInfo.FileName = "python";
-                startInfo.Arguments = string.Join(' ', new string[] { wwiser, Path.Combine(tempDir, "**/*.bnk"), "-g", "-gbs", "-te", "-nl", file, "-gl", folder.Name, "-go", txtpDir });
+                startInfo.ArgumentList.Add(wwiser);
+                startInfo.ArgumentList.Add(Path.Combine(tempDir, "**/*.bnk"));
+                startInfo.ArgumentList.Add("-g");
+                startInfo.ArgumentList.Add("-gbs");
+                startInfo.ArgumentList.Add("-te");
+                startInfo.ArgumentList.Add("-nl");
+                startInfo.ArgumentList.Add(file);
+                startInfo.ArgumentList.Add("-gl");
+                startInfo.ArgumentList.Add(folder.Name);
+                startInfo.ArgumentList.Add("-go");
+                startInfo.ArgumentList.Add(txtpDir);
                 startInfo.UseShellExecute = true;
                 using var process = Process.Start(startInfo);
                 process.WaitForExit();
@@ -331,7 +341,13 @@ public partial class MainViewModel : ViewModelBase
 
             var startInfo = new ProcessStartInfo();
             startInfo.FileName = "python";
-            startInfo.Arguments = string.Join(' ', new string[] { wwiser, Path.Combine(tempDir, "**/*.bnk"), "-g", "-gbs", "-te", "-nl", file });
+            startInfo.ArgumentList.Add(wwiser);
+            startInfo.ArgumentList.Add(Path.Combine(tempDir, "**/*.bnk"));
+            startInfo.ArgumentList.Add("-g");
+            startInfo.ArgumentList.Add("-gbs");
+            startInfo.ArgumentList.Add("-te");
+            startInfo.ArgumentList.Add("-nl");
+            startInfo.ArgumentList.Add(file);
             startInfo.UseShellExecute = true;
             using var process = Process.Start(startInfo);
             process.WaitForExit();
