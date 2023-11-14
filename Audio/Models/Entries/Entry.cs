@@ -1,9 +1,11 @@
 ﻿using System.IO;
+using System.Text.Json.Serialization;
 using Audio.Models.Chunks;
 
 namespace Audio.Models.Entries;
 public record Entry
 {
+    [JsonIgnore]
     public Package Package { get; set; }
     public ulong ID { get; set; }
     public uint Offset { get; set; }

@@ -69,12 +69,13 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
 
         return Array.Empty<string>();
     }
-    private async Task<string> PickFolder()
+    private async Task<string> PickFolder(string title = "")
     {
         var topLevel = TopLevel.GetTopLevel(this);
 
         var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions()
         {
+            Title = title,
             SuggestedStartLocation = await topLevel.StorageProvider.TryGetFolderFromPathAsync(_lastOpenDirectory)
         });
 
@@ -84,6 +85,30 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
             _lastOpenDirectory = dir;
 
             return dir;
+        }
+
+        return "";
+    }
+    private async Task<string> SaveFile(string name = "", string extension = "", string title = "", FilePickerFileType[] types = null)
+    {
+        var topLevel = TopLevel.GetTopLevel(this);
+
+        var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = title,
+            SuggestedFileName = name,
+            DefaultExtension = extension,
+            ShowOverwritePrompt = true,
+            FileTypeChoices = types ?? Array.Empty<FilePickerFileType>(),
+            SuggestedStartLocation = await topLevel.StorageProvider.TryGetFolderFromPathAsync(_lastOpenDirectory)
+        });
+
+        if (file != null)
+        {
+            var dir = await file.GetParentAsync();
+            _lastOpenDirectory = dir.ToString();
+
+            return file.TryGetLocalPath();
         }
 
         return "";
@@ -107,7 +132,7 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
 
     private async void LoadFolder_Click(object? sender, RoutedEventArgs e)
     {
-        var folder = await PickFolder();
+        var folder = await PickFolder("Select Folder");
 
         if (!string.IsNullOrEmpty(folder))
         {
@@ -126,7 +151,7 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
 
     private async void ExportAudios_Click(object? sender, RoutedEventArgs e)
     {
-        var folder = await PickFolder();
+        var folder = await PickFolder("Select Output Folder");
 
         if (!string.IsNullOrEmpty(folder))
         {
@@ -136,7 +161,7 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
 
     private async void ExportBanks_Click(object? sender, RoutedEventArgs e)
     {
-        var folder = await PickFolder();
+        var folder = await PickFolder("Select Output Folder");
 
         if (!string.IsNullOrEmpty(folder))
         {
@@ -146,7 +171,7 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
 
     private async void ExportAll_Click(object? sender, RoutedEventArgs e)
     {
-        var folder = await PickFolder();
+        var folder = await PickFolder("Select Output Folder");
 
         if (!string.IsNullOrEmpty(folder))
         {
@@ -173,7 +198,7 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
     {
         if (ViewModel.SelectedEntries.Count > 0)
         {
-            var folder = await PickFolder();
+            var folder = await PickFolder("Select Output Folder");
 
             if (!string.IsNullOrEmpty(folder))
             {
@@ -209,6 +234,15 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
             {
                 ViewModel.GenerateTXTP(wwiser, file);
             }
+        }
+    }
+    private async void DumpInfo_Click(object? sender, RoutedEventArgs e)
+    {
+        var output = await SaveFile("Packages", "json", "Select Folder", new FilePickerFileType[] { new FilePickerFileType("Packages Info") { Patterns = new[] { "*.json" } } });
+
+        if (!string.IsNullOrEmpty(output))
+        {
+            ViewModel.DumpInfo(output);
         }
     }
 }

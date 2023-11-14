@@ -22,9 +22,12 @@
 			  <MenuItem Header="Export Sounds" Click="ExportAudios_Click"/>
 			  <MenuItem Header="Export Banks" Click="ExportBanks_Click"/>
 			  <MenuItem Header="Export All" Click="ExportAll_Click"/>
+			  <Separator/>
+			  <MenuItem Header="Dump Info" Click="DumpInfo_Click"/>
 		  </MenuItem>
 		  <MenuItem Header="Options">
 			  <MenuItem Header="Load VO" Click="LoadVO_Click"/>
+			  <Separator/>
 			  <MenuItem Header="Generate TXTP" Click="GenerateTXTP_Click"/>
 			  <CheckBox Content="Export raw audio" IsChecked="{Binding RawAudio}"/>
 			  <Separator/>

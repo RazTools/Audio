@@ -6,8 +6,6 @@ using Audio.Models.Entries;
 namespace Audio.Models.Chunks;
 public record Package : Chunk
 {
-    public static Dictionary<ulong, string> BankIDToNames { get; private set; }
-
     public string Path { get; set; }
     public bool IsLittleEndian { get; set; }
     public long FolderListSize { get; set; }
@@ -19,11 +17,6 @@ public record Package : Chunk
     public Bank[] Banks { get; set; }
     public Sound[] Sounds { get; set; }
     public External[] Externals { get; set; }
-
-    static Package()
-    {
-        BankIDToNames = new Dictionary<ulong, string>();
-    }
 
     public Package(Chunk chunk) : base(chunk) { }
 

@@ -15,6 +15,8 @@ using System.Text.RegularExpressions;
 using Avalonia.Data;
 using Audio.Models.Utils;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace Audio.ViewModels;
 
@@ -104,6 +106,7 @@ public partial class MainViewModel : ViewModelBase
     public async void ExportAll(string outputDir) => await Task.Run(() => Export(Entries.Items.ToList(), outputDir));
     public async void LoadVO(string path) => await Task.Run(() => LoadVOInternal(path));
     public async void GenerateTXTP(string wwiser, string file) => await Task.Run(() => GenerateTXTPInternal(wwiser, file));
+    public async void DumpInfo(string output) => await Task.Run(() => DumpInfoInternal(output));
     public void SelectAll()
     {
         for (int i = 0; i < EntrySource.Rows.Count; i++)
@@ -121,50 +124,12 @@ public partial class MainViewModel : ViewModelBase
         Entries.Clear();
         Packages.Clear();
         Folders.Clear();
-        Package.BankIDToNames.Clear();
 
-        StatusText = $"Loading {paths.Length} files...";
-
-        ProgressHelper.Reset();
-        for (int i = 0; i < paths.Length; i++)
-        {
-            var path = paths[i];
-            var package = await ParsePackage(path);
-            Packages.Add(package);
-            ProgressHelper.Report(i, paths.Length);
-        }
+        Packages = await LoadPackages(paths);
 
         Folders.AddRange(Packages.SelectMany(x => x.Folders).DistinctBy(x => x.Name).ToList());
 
         var banks = Packages.SelectMany(x => x.Banks).Cast<Bank>().ToList();
-
-        StatusText = $"Processing {banks.Count} banks...";
-
-        ProgressHelper.Reset();
-        for (int i = 0; i < banks.Count; i++)
-        {
-            var bank = banks[i];
-            Entries.AddRange(bank.EmbeddedSounds);
-            foreach (var kv in bank.BankIDToName)
-            {
-                Package.BankIDToNames.TryAdd(kv.Key, kv.Value);
-            }
-            ProgressHelper.Report(i, banks.Count);
-        }
-
-        StatusText = $"Mapping {Package.BankIDToNames.Count} found bank names...";
-
-        ProgressHelper.Reset();
-        for (int i = 0; i < banks.Count; i++)
-        {
-            var bank = banks[i];
-            if (Package.BankIDToNames.TryGetValue(bank.ID, out var name))
-            {
-                bank.Name = name;
-            }
-            ProgressHelper.Report(i, banks.Count);
-        }
-
         var sounds = Packages.SelectMany(x => x.Sounds).Cast<Entry>().ToList();
         var externals = Packages.SelectMany(x => x.Externals).Cast<Entry>().ToList();
         var entries = banks.Concat(sounds).Concat(externals).ToArray();
@@ -175,12 +140,62 @@ public partial class MainViewModel : ViewModelBase
         for (int i = 0; i < entries.Length; i++)
         {
             var entry = entries[i];
+            if (entry is Bank bank)
+            {
+                Entries.AddRange(bank.EmbeddedSounds);
+            }
             Entries.Add(entry);
             ProgressHelper.Report(i, entries.Length);
         }
 
         Refresh();
         StatusText = "Loaded !!";
+    }
+    private async Task<List<Package>> LoadPackages(string[] paths)
+    {
+        var packages = new List<Package>();
+        var bankIDToNames = new Dictionary<ulong, string>();
+
+        StatusText = $"Loading {paths.Length} files...";
+
+        ProgressHelper.Reset();
+        for (int i = 0; i < paths.Length; i++)
+        {
+            var path = paths[i];
+            var package = await ParsePackage(path);
+            packages.Add(package);
+            ProgressHelper.Report(i, paths.Length);
+        }
+
+        var banks = packages.SelectMany(x => x.Banks).Cast<Bank>().ToList();
+
+        StatusText = $"Processing {banks.Count} banks...";
+
+        ProgressHelper.Reset();
+        for (int i = 0; i < banks.Count; i++)
+        {
+            var bank = banks[i];
+            foreach (var kv in bank.BankIDToName)
+            {
+                bankIDToNames.TryAdd(kv.Key, kv.Value);
+            }
+            ProgressHelper.Report(i, banks.Count);
+        }
+
+        StatusText = $"Mapping {bankIDToNames.Count} found bank names...";
+
+        ProgressHelper.Reset();
+        for (int i = 0; i < banks.Count; i++)
+        {
+            var bank = banks[i];
+            if (bankIDToNames.TryGetValue(bank.ID, out var name))
+            {
+                bank.Name = name;
+            }
+            ProgressHelper.Report(i, banks.Count);
+        }
+
+        return packages;
     }
     private async void LoadVOInternal(string path)
     {
@@ -278,7 +293,7 @@ public partial class MainViewModel : ViewModelBase
         var package = await Task.Run(() => Package.Parse(path));
         return package;
     }
-    private async void GenerateTXTPInternal(string wwiser, string file)
+    private void GenerateTXTPInternal(string wwiser, string file)
     {
         StatusText = "Exporting banks temporarly to temp folder...";
 
@@ -416,5 +431,26 @@ public partial class MainViewModel : ViewModelBase
                 }
             }
         }
+    }
+    private async void DumpInfoInternal(string output)
+    {
+        var banks = Packages.SelectMany(x => x.Banks).Cast<Entry>().ToList();
+        var sounds = Packages.SelectMany(x => x.Sounds).Cast<Entry>().ToList();
+        var externals = Packages.SelectMany(x => x.Externals).Cast<Entry>().ToList();
+        var embeddedSounds = Packages.SelectMany(x => x.Banks).SelectMany(x => x.EmbeddedSounds).Cast<Entry>().ToList();
+
+        var entries = banks.Concat(sounds).Concat(externals).Concat(embeddedSounds).ToList();
+
+        var options = new JsonSerializerOptions
+        {
+            ReferenceHandler = ReferenceHandler.IgnoreCycles,
+            WriteIndented = true
+        };
+        options.Converters.Add(new JsonStringEnumConverter());
+        var str = JsonSerializer.Serialize(entries, options);
+
+        File.WriteAllText(output, str);
+
+        StatusText = $"Dumped to {output} successfully !!";
     }
 }
