@@ -1,14 +1,11 @@
-﻿using Avalonia;
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.ReactiveUI;
 using Audio.ViewModels;
 using System;
-using System.ComponentModel;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
@@ -233,6 +230,25 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
             if (!string.IsNullOrEmpty(file))
             {
                 ViewModel.GenerateTXTP(wwiser, file);
+            }
+        }
+    }
+    private async void GenerateDIFF_Click(object? sender, RoutedEventArgs e)
+    {
+        var src = await PickFolder("Select Source Folder");
+
+        if (!string.IsNullOrEmpty(src))
+        {
+            var dst = await PickFolder("Select Destination Folder");
+
+            if (!string.IsNullOrEmpty(dst))
+            {
+                var output = await SaveFile("diff", "json", "Select Folder", new FilePickerFileType[] { new FilePickerFileType("DIFF json file") { Patterns = new[] { "*.json" } } });
+
+                if (!string.IsNullOrEmpty(output))
+                {
+                    ViewModel.GenerateDIFF(src, dst, output);
+                }
             }
         }
     }

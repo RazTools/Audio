@@ -28,6 +28,7 @@
 		  <MenuItem Header="Options">
 			  <MenuItem Header="Load VO" Click="LoadVO_Click"/>
 			  <Separator/>
+			  <MenuItem Header="Generate DIFF" Click="GenerateDIFF_Click"/>
 			  <MenuItem Header="Generate TXTP" Click="GenerateTXTP_Click"/>
 			  <CheckBox Content="Export raw audio" IsChecked="{Binding RawAudio}"/>
 			  <Separator/>
