@@ -136,6 +136,20 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
             ViewModel.LoadFolder(folder);
         }
     }
+    private async void LoadDIFF_Click(object? sender, RoutedEventArgs e)
+    {
+        var src = await PickFolder("Select Source Folder");
+
+        if (!string.IsNullOrEmpty(src))
+        {
+            var dst = await PickFolder("Select Destination Folder");
+
+            if (!string.IsNullOrEmpty(dst))
+            {
+                ViewModel.LoadDIFF(src, dst);
+            }
+        }
+    }
     private async void LoadVO_Click(object? sender, RoutedEventArgs e)
     {
         var file = await PickFile(new FilePickerFileType[] { FilePickerFileTypes.TextPlain });
@@ -230,25 +244,6 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
             if (!string.IsNullOrEmpty(file))
             {
                 ViewModel.GenerateTXTP(wwiser, file);
-            }
-        }
-    }
-    private async void GenerateDIFF_Click(object? sender, RoutedEventArgs e)
-    {
-        var src = await PickFolder("Select Source Folder");
-
-        if (!string.IsNullOrEmpty(src))
-        {
-            var dst = await PickFolder("Select Destination Folder");
-
-            if (!string.IsNullOrEmpty(dst))
-            {
-                var output = await SaveFile("diff", "json", "Select Folder", new FilePickerFileType[] { new FilePickerFileType("DIFF json file") { Patterns = new[] { "*.json" } } });
-
-                if (!string.IsNullOrEmpty(output))
-                {
-                    ViewModel.GenerateDIFF(src, dst, output);
-                }
             }
         }
     }

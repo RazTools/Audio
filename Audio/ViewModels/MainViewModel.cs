@@ -107,7 +107,7 @@ public partial class MainViewModel : ViewModelBase
     public async void ExportAll(string outputDir) => await Task.Run(() => Export(Entries.Items.ToList(), outputDir));
     public async void LoadVO(string path) => await Task.Run(() => LoadVOInternal(path));
     public async void GenerateTXTP(string wwiser, string file) => await Task.Run(() => GenerateTXTPInternal(wwiser, file));
-    public async void GenerateDIFF(string src, string dst, string output) => await Task.Run(() => GenerateDIFFInternal(src, dst, output));
+    public async void LoadDIFF(string src, string dst) => await Task.Run(() => LoadDIFFInternal(src, dst));
     public async void DumpInfo(string output) => await Task.Run(() => DumpInfoInternal(output));
     public void SelectAll()
     {
@@ -198,6 +198,72 @@ public partial class MainViewModel : ViewModelBase
         }
 
         return packages;
+    }
+    private async void LoadDIFFInternal(string src, string dst)
+    {
+        Entries.Clear();
+        Packages.Clear();
+        Folders.Clear();
+
+        var srcPaths = Directory.GetFiles(src, "*.pck", SearchOption.AllDirectories);
+        var dstPaths = Directory.GetFiles(dst, "*.pck", SearchOption.AllDirectories);
+
+        var srcPackages = await LoadPackages(srcPaths);
+        var dstPackages = await LoadPackages(dstPaths);
+
+        var sounds = srcPackages.SelectMany(x => x.Sounds).Cast<Entry>();
+        var externals = srcPackages.SelectMany(x => x.Externals).Cast<Entry>();
+        var embeddedSounds = srcPackages.SelectMany(x => x.Banks).SelectMany(x => x.EmbeddedSounds).Cast<Entry>();
+
+        var srcEntries = sounds.Concat(externals).Concat(embeddedSounds).ToList();
+
+        sounds = dstPackages.SelectMany(x => x.Sounds).Cast<Entry>();
+        externals = dstPackages.SelectMany(x => x.Externals).Cast<Entry>();
+        embeddedSounds = dstPackages.SelectMany(x => x.Banks).SelectMany(x => x.EmbeddedSounds).Cast<Entry>();
+
+        var dstEntries = sounds.Concat(externals).Concat(embeddedSounds).ToList();
+
+        StatusText = "Comparing source and destination...";
+
+        var diff = new List<Entry>();
+        ProgressHelper.Reset();
+        for (int i = 0; i < dstEntries.Count; i++)
+        {
+            var entry = dstEntries[i];
+            ProgressHelper.Report(i, dstEntries.Count);
+
+            var matched = false;
+            var targets = srcEntries.Where(x => x.ID == entry.ID && x.Type == entry.Type);
+            foreach (var target in targets)
+            {
+                if (entry.Size == target.Size)
+                {
+                    var entryHash = MD5.HashData(entry.GetData());
+                    var targetHash = MD5.HashData(target.GetData());
+
+                    if (entryHash.SequenceEqual(targetHash))
+                    {
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+
+            if (matched)
+            {
+                continue;
+            }
+
+            diff.Add(entry);
+        }
+
+        StatusText = $"Found {diff.Count} differences !!";
+
+        Packages = diff.Select(x => x.Package).Distinct().ToList();
+        Folders.AddRange(Packages.SelectMany(x => x.Folders).DistinctBy(x => x.Name).ToList());
+
+        Entries.AddRange(diff);
+        Refresh();
     }
     private async void LoadVOInternal(string path)
     {
@@ -434,87 +500,15 @@ public partial class MainViewModel : ViewModelBase
             }
         }
     }
-    private async void GenerateDIFFInternal(string src, string dst, string output)
-    {
-        var srcPaths = Directory.GetFiles(src, "*.pck", SearchOption.AllDirectories);
-        var dstPaths = Directory.GetFiles(src, "*.pck", SearchOption.AllDirectories);
-
-        var srcPackages = await LoadPackages(srcPaths);
-        var dstPackages = await LoadPackages(dstPaths);
-
-        var sounds = srcPackages.SelectMany(x => x.Sounds).Cast<Entry>();
-        var externals = srcPackages.SelectMany(x => x.Externals).Cast<Entry>();
-        var embeddedSounds = srcPackages.SelectMany(x => x.Banks).SelectMany(x => x.EmbeddedSounds).Cast<Entry>();
-
-        var srcEntries = sounds.Concat(externals).Concat(embeddedSounds).ToList();
-
-        sounds = dstPackages.SelectMany(x => x.Sounds).Cast<Entry>();
-        externals = dstPackages.SelectMany(x => x.Externals).Cast<Entry>();
-        embeddedSounds = dstPackages.SelectMany(x => x.Banks).SelectMany(x => x.EmbeddedSounds).Cast<Entry>();
-
-        var dstEntries = sounds.Concat(externals).Concat(embeddedSounds).ToList();
-
-        StatusText = "Comparing source and destination...";
-
-        var diff = new List<Entry>();
-        ProgressHelper.Reset();
-        for (int i = 0; i < dstEntries.Count; i++)
-        {
-            var entry = dstEntries[i];
-            ProgressHelper.Report(i, dstEntries.Count);
-
-            var matched = false;
-            var targets = srcEntries.Where(x => x.ID == entry.ID && x.Type == entry.Type);
-            foreach(var target in targets)
-            {
-                if (entry.Size == target.Size)
-                {
-                    var entryHash = MD5.HashData(entry.GetData());
-                    var targetHash = MD5.HashData(target.GetData());
-
-                    if (entryHash.SequenceEqual(targetHash))
-                    {
-                        matched = true;
-                    }
-                }
-            }
-
-            if (matched)
-            {
-                continue;
-            }
-
-            diff.Add(entry);
-        }
-
-        StatusText = $"Found {diff.Count} differences !!";
-
-        var options = new JsonSerializerOptions
-        {
-            ReferenceHandler = ReferenceHandler.IgnoreCycles,
-            WriteIndented = true
-        };
-        options.Converters.Add(new JsonStringEnumConverter());
-        var str = JsonSerializer.Serialize(diff, options);
-
-        File.WriteAllText(output, str);
-    }
     private void DumpInfoInternal(string output)
     {
-        var banks = Packages.SelectMany(x => x.Banks).Cast<Entry>().ToList();
-        var sounds = Packages.SelectMany(x => x.Sounds).Cast<Entry>().ToList();
-        var externals = Packages.SelectMany(x => x.Externals).Cast<Entry>().ToList();
-        var embeddedSounds = Packages.SelectMany(x => x.Banks).SelectMany(x => x.EmbeddedSounds).Cast<Entry>().ToList();
-
-        var entries = banks.Concat(sounds).Concat(externals).Concat(embeddedSounds).ToList();
-
         var options = new JsonSerializerOptions
         {
             ReferenceHandler = ReferenceHandler.IgnoreCycles,
             WriteIndented = true
         };
         options.Converters.Add(new JsonStringEnumConverter());
-        var str = JsonSerializer.Serialize(entries, options);
+        var str = JsonSerializer.Serialize(Entries.Items, options);
 
         File.WriteAllText(output, str);
 

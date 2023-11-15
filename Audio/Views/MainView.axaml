@@ -18,6 +18,7 @@
 		  <MenuItem Header="File">
 			  <MenuItem Header="Load File(s)" Click="LoadFile_Click"/>
 			  <MenuItem Header="Load Folder" Click="LoadFolder_Click"/>
+			  <MenuItem Header="Load DIFF" Click="LoadDIFF_Click"/>
 			  <Separator/>
 			  <MenuItem Header="Export Sounds" Click="ExportAudios_Click"/>
 			  <MenuItem Header="Export Banks" Click="ExportBanks_Click"/>
@@ -28,7 +29,6 @@
 		  <MenuItem Header="Options">
 			  <MenuItem Header="Load VO" Click="LoadVO_Click"/>
 			  <Separator/>
-			  <MenuItem Header="Generate DIFF" Click="GenerateDIFF_Click"/>
 			  <MenuItem Header="Generate TXTP" Click="GenerateTXTP_Click"/>
 			  <CheckBox Content="Export raw audio" IsChecked="{Binding RawAudio}"/>
 			  <Separator/>
