@@ -410,6 +410,7 @@ public partial class MainViewModel : ViewModelBase
                 startInfo.ArgumentList.Add(folder.Name);
                 startInfo.ArgumentList.Add("-go");
                 startInfo.ArgumentList.Add(txtpDir);
+                startInfo.WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory;
                 startInfo.UseShellExecute = true;
                 using var process = Process.Start(startInfo);
                 process.WaitForExit();
@@ -432,6 +433,7 @@ public partial class MainViewModel : ViewModelBase
             startInfo.ArgumentList.Add("-te");
             startInfo.ArgumentList.Add("-nl");
             startInfo.ArgumentList.Add(file);
+            startInfo.WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory;
             startInfo.UseShellExecute = true;
             using var process = Process.Start(startInfo);
             process.WaitForExit();
