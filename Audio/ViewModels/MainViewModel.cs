@@ -65,6 +65,7 @@ public partial class MainViewModel : ViewModelBase
     public FlatTreeDataGridSource<Entry> EntrySource { get; set; }
     public string ClipboardText { get; set; }
     public bool RawAudio { get; set; }
+    public bool AllowDupes { get; set; }
     public MainViewModel()
     {
         SearchText = "";
@@ -400,6 +401,11 @@ public partial class MainViewModel : ViewModelBase
                 startInfo.ArgumentList.Add("-g");
                 startInfo.ArgumentList.Add("-gbs");
                 startInfo.ArgumentList.Add("-te");
+                if (AllowDupes)
+                {
+                    startInfo.ArgumentList.Add("-gd");
+                    startInfo.ArgumentList.Add("-gde");
+                }
                 startInfo.ArgumentList.Add("-nl");
                 startInfo.ArgumentList.Add(file);
                 startInfo.ArgumentList.Add("-gl");
@@ -427,6 +433,11 @@ public partial class MainViewModel : ViewModelBase
             startInfo.ArgumentList.Add("-g");
             startInfo.ArgumentList.Add("-gbs");
             startInfo.ArgumentList.Add("-te");
+            if (AllowDupes)
+            {
+                startInfo.ArgumentList.Add("-gd");
+                startInfo.ArgumentList.Add("-gde");
+            }
             startInfo.ArgumentList.Add("-nl");
             startInfo.ArgumentList.Add(file);
             startInfo.WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory;
