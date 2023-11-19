@@ -318,17 +318,13 @@ public partial class MainViewModel : ViewModelBase
     }
     private void DumpEntry(Entry entry, string outputPath)
     {
-        var bytes = entry.GetData();
-
         Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
         using var fs = File.OpenWrite(outputPath);
-        fs.Write(bytes);
+        fs.Write(entry.GetData());
     }
     private void DumpTXTH(Entry entry, string outputPath)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
-        File.CreateText(outputPath).Close();
-
         using var fs = File.OpenWrite($"{outputPath}.txth");
         using var writer = new StreamWriter(fs);
         writer.WriteLine($"body_file = {Path.GetRelativePath(outputPath, entry.Source)}");
@@ -438,7 +434,6 @@ public partial class MainViewModel : ViewModelBase
             using var process = Process.Start(startInfo);
             process.WaitForExit();
 
-
             Export(banks, txtpDir, RawAudio ? DumpEntry : DumpTXTH);
         }
 
@@ -448,7 +443,10 @@ public partial class MainViewModel : ViewModelBase
     }
     private void Export(List<Bank> banks, string txtpDir, Action<Entry, string> exportAction)
     {
-        var sounds = Packages.SelectMany(x => x.Sounds).Cast<Sound>().ToList();
+        var sounds = Entries.Items.OfType<Sound>().Cast<Entry>().ToList();
+        var embeddedSounds = banks.SelectMany(x => x.EmbeddedSounds).Cast<Entry>().ToList();
+
+        var entries = sounds.Concat(embeddedSounds).ToList();
 
         var wemDir = Path.Combine(txtpDir, "wem");
 
@@ -462,44 +460,25 @@ public partial class MainViewModel : ViewModelBase
         StatusText = $"Found {files.Length} TXTP, proccessing...";
         foreach (var f in files)
         {
-            var lines = File.ReadAllLines(f);
-            foreach (var line in lines)
+            var text = File.ReadAllText(f);
+            foreach (Match match in WEMID().Matches(text))
             {
-                if (line.StartsWith('#'))
-                    break;
-
-                var match = Regex.Match(line, "wem/(\\d+).wem");
                 if (match.Success)
                 {
-                    var soundIDString = match.Groups[1].Value;
-                    if (ulong.TryParse(soundIDString, out var soundID))
+                    var IDString = match.Groups[1].Value;
+                    if (ulong.TryParse(IDString, out var ID))
                     {
-                        var sound = sounds.FirstOrDefault(x => x.ID == soundID);
-                        if (sound != null)
+                        var target = entries.FirstOrDefault(x => x.ID == ID);
+                        if (target != null)
                         {
-                            var outputPath = Path.Combine(wemDir, $"{soundID}.wem");
-                            exportAction(sound, outputPath);
-                            continue;
-                        }
-                    }
-
-                    var embeddedIDString = match.Groups[1].Value;
-                    if (ulong.TryParse(embeddedIDString, out var embeddedID))
-                    {
-                        var bank = banks.FirstOrDefault(x => x.EmbeddedSounds.Any(x => x.ID == embeddedID));
-                        if (bank != null)
-                        {
-                            var embeddedSound = bank.EmbeddedSounds.FirstOrDefault(x => x.ID == embeddedID);
-                            if (embeddedSound != null)
-                            {
-                                var outputPath = Path.Combine(wemDir, $"{embeddedID}.wem");
-                                exportAction(embeddedSound, outputPath);
-                                continue;
-                            }
+                            var outputPath = Path.Combine(wemDir, $"{ID}.wem");
+                            exportAction(target, outputPath);
                         }
                     }
                 }
             }
+            text = text.Replace(".wem", ".wem.txth");
+            File.WriteAllText(f, text);
         }
     }
     private void DumpInfoInternal(string output)
@@ -516,4 +495,7 @@ public partial class MainViewModel : ViewModelBase
 
         StatusText = $"Dumped to {output} successfully !!";
     }
+
+    [GeneratedRegex("wem/(\\d+).wem")]
+    private static partial Regex WEMID();
 }
