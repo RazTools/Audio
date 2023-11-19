@@ -64,13 +64,15 @@ public partial class MainViewModel : ViewModelBase
     public ObservableCollection<Folder> Folders { get; set; }
     public FlatTreeDataGridSource<Entry> EntrySource { get; set; }
     public string ClipboardText { get; set; }
-    public bool RawAudio { get; set; }
+    public bool IsExportAudio { get; set; }
+    public bool EnableTXTH { get; set; }
     public bool AllowDupes { get; set; }
     public MainViewModel()
     {
         SearchText = "";
         ClipboardText = "";
         StatusText = "";
+        IsExportAudio = true;
 
         ProgressHelper.Instance = new Progress<double>(value => ProgressValue = value);
 
@@ -417,7 +419,10 @@ public partial class MainViewModel : ViewModelBase
                 using var process = Process.Start(startInfo);
                 process.WaitForExit();
 
-                Export(banks, txtpDir, RawAudio ? DumpEntry : DumpTXTH);
+                if (IsExportAudio)
+                {
+                    ExportAudio(banks, txtpDir);
+                }
             }
         }
         else
@@ -445,14 +450,17 @@ public partial class MainViewModel : ViewModelBase
             using var process = Process.Start(startInfo);
             process.WaitForExit();
 
-            Export(banks, txtpDir, RawAudio ? DumpEntry : DumpTXTH);
+            if (IsExportAudio)
+            {
+                ExportAudio(banks, txtpDir);
+            }
         }
 
         Directory.Delete(tempDir, true);
 
         StatusText = "TXTP generated successfully !!";
     }
-    private void Export(List<Bank> banks, string txtpDir, Action<Entry, string> exportAction)
+    private void ExportAudio(List<Bank> banks, string txtpDir)
     {
         var sounds = Entries.Items.OfType<Sound>().Cast<Entry>().ToList();
         var embeddedSounds = banks.SelectMany(x => x.EmbeddedSounds).Cast<Entry>().ToList();
@@ -483,13 +491,23 @@ public partial class MainViewModel : ViewModelBase
                         if (target != null)
                         {
                             var outputPath = Path.Combine(wemDir, $"{ID}.wem");
-                            exportAction(target, outputPath);
+                            if (EnableTXTH)
+                            {
+                                DumpTXTH(target, outputPath);
+                            }
+                            else
+                            {
+                                DumpEntry(target, outputPath);
+                            }
                         }
                     }
                 }
             }
-            text = text.Replace(".wem", ".wem.txth");
-            File.WriteAllText(f, text);
+            if (EnableTXTH)
+            {
+                text = text.Replace(".wem", ".wem.txth");
+                File.WriteAllText(f, text);
+            }    
         }
     }
     private void DumpInfoInternal(string output)

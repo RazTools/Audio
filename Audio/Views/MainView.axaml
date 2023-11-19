@@ -30,8 +30,9 @@
 			  <MenuItem Header="Load VO" Click="LoadVO_Click"/>
 			  <Separator/>
 			  <MenuItem Header="Generate TXTP" Click="GenerateTXTP_Click"/>
-			  <CheckBox Content="Export raw audio" IsChecked="{Binding RawAudio}" ToolTip.Tip="Check if .wem audio files should be exported instead of .txth simulated from original files"/>
-			  <CheckBox Content="Allow duplicates" IsChecked="{Binding AllowDupes}" ToolTip.Tip="Check to instruct wwiser to allow duplicate .txtp entries"/>
+			  <CheckBox Content="Export audio" IsChecked="{Binding IsExportAudio}" ToolTip.Tip="Check If you want to export audio after invoking wwiser."/>
+			  <CheckBox Content="Replace WEM with TXTH" IsChecked="{Binding EnableTXTH}" ToolTip.Tip="Check if .txth files should be used instead of .wem to allow for streaming audio from original files."/>
+			  <CheckBox Content="Allow duplicates" IsChecked="{Binding AllowDupes}" ToolTip.Tip="Check to instruct wwiser to allow duplicate .txtp entries."/>
 			  <Separator/>
 			  <ItemsControl ItemsSource="{Binding Folders}">
 				  <ItemsControl.ItemTemplate>
