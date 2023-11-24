@@ -17,17 +17,23 @@ public record Package : Chunk
     public Bank[] Banks { get; set; }
     public Sound[] Sounds { get; set; }
     public External[] Externals { get; set; }
+    public bool Parsed => IsLittleEndian == true;
 
     public Package(Chunk chunk) : base(chunk) { }
 
-    public static Package Parse(string path)
+    public static bool Parse(string path, out Package package)
     {
         using var fs = File.OpenRead(path);
         using var reader = new BinaryReader(fs);
 
-        var package = ParseChunk(reader) as Package;
+        package = ParseChunk(reader) as Package;
+        if (package == null)
+        {
+            return false;
+        }
+
         package.Path = path;
-        return package;
+        return true;
     }
 
     public new void Parse(BinaryReader reader)

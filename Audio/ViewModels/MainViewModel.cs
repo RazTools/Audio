@@ -101,7 +101,7 @@ public partial class MainViewModel : ViewModelBase
     }
     public async void LoadFolder(string folder)
     {
-        var paths = Directory.GetFiles(folder, "*.pck", SearchOption.AllDirectories);
+        var paths = Directory.GetFiles(folder, "*.*", SearchOption.AllDirectories);
         await Task.Run(() => LoadPaths(paths));
     }
     public async void ExportSelectedEntries(string outputDir) => await Task.Run(() => Export(SelectedEntries, outputDir));
@@ -167,8 +167,11 @@ public partial class MainViewModel : ViewModelBase
         for (int i = 0; i < paths.Length; i++)
         {
             var path = paths[i];
-            var package = await ParsePackage(path);
+            var (parsed, package) = await ParsePackage(path);
+            if (parsed)
+            {
             packages.Add(package);
+            }
             ProgressHelper.Report(i, paths.Length);
         }
 
@@ -208,8 +211,8 @@ public partial class MainViewModel : ViewModelBase
         Packages.Clear();
         Folders.Clear();
 
-        var srcPaths = Directory.GetFiles(src, "*.pck", SearchOption.AllDirectories);
-        var dstPaths = Directory.GetFiles(dst, "*.pck", SearchOption.AllDirectories);
+        var srcPaths = Directory.GetFiles(src, "*.*", SearchOption.AllDirectories);
+        var dstPaths = Directory.GetFiles(dst, "*.*", SearchOption.AllDirectories);
 
         var srcPackages = await LoadPackages(srcPaths);
         var dstPackages = await LoadPackages(dstPaths);
