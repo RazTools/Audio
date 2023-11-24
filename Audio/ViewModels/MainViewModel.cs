@@ -358,10 +358,11 @@ public partial class MainViewModel : ViewModelBase
         Entries.Connect().Filter(EntryFilter).Bind(out _filteredEntries).Subscribe();
         Dispatcher.UIThread.Invoke(() => EntrySource.Items = FilteredEntries);
     }
-    private async Task<Package> ParsePackage(string path)
+    private async Task<(bool, Package)> ParsePackage(string path)
     {
-        var package = await Task.Run(() => Package.Parse(path));
-        return package;
+        var package = new Package(new Chunk() { Signature = "", Length = 0 });
+        var parsed = await Task.Run(() => Package.Parse(path, out package));
+        return (parsed, package);
     }
     private void GenerateTXTPInternal(string wwiser, string file)
     {
