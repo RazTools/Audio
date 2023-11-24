@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using Audio.Extensions;
 using Audio.Models.Utils;
 
@@ -23,39 +24,43 @@ public record Chunk : IParse
     public static Chunk ParseChunk(BinaryReader reader)
     {
         var chunk = new Chunk();
-        chunk.Parse(reader);
-
-        switch (chunk.Signature)
+        try
         {
-            case "AKPK":
-                var package = new Package(chunk);
-                package.Parse(reader);
-                chunk = package;
-                break;
-            case "BKHD":  
-                var bkhd = new BKHD(chunk);
-                bkhd.Parse(reader);
-                chunk = bkhd;
-                break;
-            case "STID":
-                var stid = new STID(chunk);
-                stid.Parse(reader);
-                chunk = stid;
-                break;
-            case "DIDX":
-                var didx = new DIDX(chunk);
-                didx.Parse(reader);
-                chunk = didx;
-                break;
-            case "DATA":
-                var data = new DATA(chunk);
-                data.Parse(reader);
-                chunk = data;
-                break;
-            default:
-                reader.BaseStream.Position += chunk.Length;
-                break;
+            chunk.Parse(reader);
+
+            switch (chunk.Signature)
+            {
+                case "AKPK":
+                    var package = new Package(chunk);
+                    package.Parse(reader);
+                    chunk = package;
+                    break;
+                case "BKHD":
+                    var bkhd = new BKHD(chunk);
+                    bkhd.Parse(reader);
+                    chunk = bkhd;
+                    break;
+                case "STID":
+                    var stid = new STID(chunk);
+                    stid.Parse(reader);
+                    chunk = stid;
+                    break;
+                case "DIDX":
+                    var didx = new DIDX(chunk);
+                    didx.Parse(reader);
+                    chunk = didx;
+                    break;
+                case "DATA":
+                    var data = new DATA(chunk);
+                    data.Parse(reader);
+                    chunk = data;
+                    break;
+                default:
+                    reader.BaseStream.Position += chunk.Length;
+                    break;
+            }
         }
+        catch (Exception) { }
 
         return chunk;
     }

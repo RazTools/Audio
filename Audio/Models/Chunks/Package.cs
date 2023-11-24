@@ -17,7 +17,6 @@ public record Package : Chunk
     public Bank[] Banks { get; set; }
     public Sound[] Sounds { get; set; }
     public External[] Externals { get; set; }
-    public bool Parsed => IsLittleEndian == true;
 
     public Package(Chunk chunk) : base(chunk) { }
 
@@ -26,14 +25,16 @@ public record Package : Chunk
         using var fs = File.OpenRead(path);
         using var reader = new BinaryReader(fs);
 
-        package = ParseChunk(reader) as Package;
-        if (package == null)
+        var chunk = ParseChunk(reader);
+        if (chunk is Package chk)
         {
-            return false;
+            chk.Path = path;
+            package = chk;
+            return true;
         }
 
-        package.Path = path;
-        return true;
+        package = null;
+        return false;
     }
 
     public new void Parse(BinaryReader reader)
