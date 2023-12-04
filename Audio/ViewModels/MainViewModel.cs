@@ -65,6 +65,7 @@ public partial class MainViewModel : ViewModelBase
     public FlatTreeDataGridSource<Entry> EntrySource { get; set; }
     public string ClipboardText { get; set; }
     public bool IsExportAudio { get; set; }
+    public bool AllowBanks { get; set; }
     public bool EnableTXTH { get; set; }
     public bool AllowDupes { get; set; }
     public MainViewModel()
@@ -170,7 +171,7 @@ public partial class MainViewModel : ViewModelBase
             var (parsed, package) = await ParsePackage(path);
             if (parsed)
             {
-            packages.Add(package);
+                packages.Add(package);
             }
             ProgressHelper.Report(i, paths.Length);
         }
@@ -324,20 +325,36 @@ public partial class MainViewModel : ViewModelBase
     }
     private void DumpEntry(Entry entry, string outputPath)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
-        using var fs = File.OpenWrite(outputPath);
-        fs.Write(entry.GetData());
+        var fileInfo = new FileInfo(outputPath);
+        Directory.CreateDirectory(fileInfo.DirectoryName);
+        if (fileInfo.Exists && fileInfo.Length != entry.Size)
+        {
+            fileInfo.Delete();
+        }
+        if (!fileInfo.Exists)
+        {
+            using var fs = fileInfo.OpenWrite();
+            fs.Write(entry.GetData());
+        }
     }
     private void DumpTXTH(Entry entry, string outputPath)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
-        using var fs = File.OpenWrite($"{outputPath}.txth");
-        using var writer = new StreamWriter(fs);
-        writer.WriteLine($"body_file = {Path.GetRelativePath(outputPath, entry.Source)}");
-        writer.WriteLine($"subfile_offset = {entry.Offset}");
-        writer.WriteLine($"subfile_size = {entry.Size}");
-        writer.WriteLine("subfile_extension = wem");
-        writer.Close();
+        var fileInfo = new FileInfo($"{outputPath}.txth");
+        Directory.CreateDirectory(fileInfo.DirectoryName);
+        if (fileInfo.Exists && fileInfo.Length != entry.Size)
+        {
+            fileInfo.Delete();
+        }
+        if (!fileInfo.Exists)
+        {
+            using var fs = fileInfo.OpenWrite();
+            using var writer = new StreamWriter(fs);
+            writer.WriteLine($"body_file = {Path.GetRelativePath(fileInfo.FullName, entry.Source)}");
+            writer.WriteLine($"subfile_offset = {entry.Offset}");
+            writer.WriteLine($"subfile_size = {entry.Size}");
+            writer.WriteLine("subfile_extension = wem");
+            writer.Close();
+        }
     }
     private bool EntryFilter(Entry entry)
     {
@@ -366,11 +383,11 @@ public partial class MainViewModel : ViewModelBase
     }
     private void GenerateTXTPInternal(string wwiser, string file)
     {
-        StatusText = "Exporting banks temporarly to temp folder...";
+        var outputDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "output");
+        var banksDir = Path.Combine(outputDir, "banks");
+        StatusText = AllowBanks ? "Exporting banks..." : "Exporting banks temporarly to temp folder...";
 
-        var tempDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "temp");
-        Directory.CreateDirectory(tempDir);
-
+        Directory.CreateDirectory(banksDir);
         var banks = SelectedEntries.OfType<Bank>().ToList();
         if (banks.Count == 0)
         {
@@ -384,7 +401,7 @@ public partial class MainViewModel : ViewModelBase
         }
         foreach (var bank in banks)
         {
-            var outputPath = Path.Combine(tempDir, bank.Location);
+            var outputPath = Path.Combine(banksDir, bank.Location);
             DumpEntry(bank, outputPath);
         }
 
@@ -397,16 +414,19 @@ public partial class MainViewModel : ViewModelBase
 
                 StatusText = $"Invoking wwiser for language {folder.Name}...";
 
-                var txtpDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "txtp", folder.Name);
+                var txtpDir = Path.Combine(outputDir, "txtp", folder.Name);
                 Directory.CreateDirectory(Path.GetDirectoryName(txtpDir));
 
                 var startInfo = new ProcessStartInfo();
                 startInfo.FileName = "python";
                 startInfo.ArgumentList.Add(wwiser);
-                startInfo.ArgumentList.Add(Path.Combine(tempDir, "**/*.bnk"));
+                startInfo.ArgumentList.Add(Path.Combine(banksDir, "**/*.bnk"));
                 startInfo.ArgumentList.Add("-g");
-                startInfo.ArgumentList.Add("-gbs");
                 startInfo.ArgumentList.Add("-te");
+                if (!AllowBanks)
+                {
+                    startInfo.ArgumentList.Add("-gbs");
+                }
                 if (AllowDupes)
                 {
                     startInfo.ArgumentList.Add("-gd");
@@ -417,8 +437,8 @@ public partial class MainViewModel : ViewModelBase
                 startInfo.ArgumentList.Add("-gl");
                 startInfo.ArgumentList.Add(folder.Name);
                 startInfo.ArgumentList.Add("-go");
-                startInfo.ArgumentList.Add(txtpDir);
-                startInfo.WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                startInfo.ArgumentList.Add(Path.GetRelativePath(outputDir, txtpDir));
+                startInfo.WorkingDirectory = outputDir;
                 startInfo.UseShellExecute = true;
                 using var process = Process.Start(startInfo);
                 process.WaitForExit();
@@ -433,15 +453,18 @@ public partial class MainViewModel : ViewModelBase
         {
             StatusText = "Invoking wwiser...";
 
-            var txtpDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "txtp");
+            var txtpDir = Path.Combine(outputDir, "txtp");
 
             var startInfo = new ProcessStartInfo();
             startInfo.FileName = "python";
             startInfo.ArgumentList.Add(wwiser);
-            startInfo.ArgumentList.Add(Path.Combine(tempDir, "**/*.bnk"));
+            startInfo.ArgumentList.Add(Path.Combine(banksDir, "**/*.bnk"));
             startInfo.ArgumentList.Add("-g");
-            startInfo.ArgumentList.Add("-gbs");
             startInfo.ArgumentList.Add("-te");
+            if (!AllowBanks)
+            {
+                startInfo.ArgumentList.Add("-gbs");
+            }
             if (AllowDupes)
             {
                 startInfo.ArgumentList.Add("-gd");
@@ -449,7 +472,7 @@ public partial class MainViewModel : ViewModelBase
             }
             startInfo.ArgumentList.Add("-nl");
             startInfo.ArgumentList.Add(file);
-            startInfo.WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            startInfo.WorkingDirectory = outputDir;
             startInfo.UseShellExecute = true;
             using var process = Process.Start(startInfo);
             process.WaitForExit();
@@ -460,16 +483,21 @@ public partial class MainViewModel : ViewModelBase
             }
         }
 
-        Directory.Delete(tempDir, true);
+        if (!AllowBanks)
+        {
+            Directory.Delete(banksDir, true);
+        }
 
         StatusText = "TXTP generated successfully !!";
     }
     private void ExportAudio(List<Bank> banks, string txtpDir)
     {
-        var sounds = Entries.Items.OfType<Sound>().Cast<Entry>().ToList();
-        var embeddedSounds = banks.SelectMany(x => x.EmbeddedSounds).Cast<Entry>().ToList();
-
-        var entries = sounds.Concat(embeddedSounds).ToList();
+        var entries = Entries.Items.OfType<Sound>().Cast<Entry>().ToList();
+        if (!AllowBanks)
+        {
+            var embeddedSounds = banks.SelectMany(x => x.EmbeddedSounds).Cast<Entry>().ToList();
+            entries = entries.Concat(embeddedSounds).ToList();
+        }
 
         var wemDir = Path.Combine(txtpDir, "wem");
 
@@ -483,9 +511,16 @@ public partial class MainViewModel : ViewModelBase
         StatusText = $"Found {files.Length} TXTP, proccessing...";
         foreach (var f in files)
         {
-            var text = File.ReadAllText(f);
-            foreach (Match match in WEMID().Matches(text))
+            var hasTXTH = false;
+            var lines = File.ReadAllLines(f);
+            for (int i = 0; i < lines.Length; i++)
             {
+                var line = lines[i];
+
+                if (line.StartsWith('#'))
+                    break;
+
+                var match = WEMID().Match(line);
                 if (match.Success)
                 {
                     var IDString = match.Groups[1].Value;
@@ -498,6 +533,8 @@ public partial class MainViewModel : ViewModelBase
                             if (EnableTXTH)
                             {
                                 DumpTXTH(target, outputPath);
+                                lines[i] = line.Replace(".wem", ".wem.txth");
+                                hasTXTH = true;
                             }
                             else
                             {
@@ -507,11 +544,10 @@ public partial class MainViewModel : ViewModelBase
                     }
                 }
             }
-            if (EnableTXTH)
+            if (hasTXTH)
             {
-                text = text.Replace(".wem", ".wem.txth");
-                File.WriteAllText(f, text);
-            }    
+                File.WriteAllLines(f, lines);
+            }
         }
     }
     private void DumpInfoInternal(string output)
