@@ -12,6 +12,24 @@
          to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
     <vm:MainViewModel />
   </Design.DataContext>
+  <UserControl.Styles>
+  	<Style Selector="ToggleButton PathIcon.Play">
+  		<Setter Property="IsVisible" Value="True"/>
+  	</Style>
+  	<Style Selector="ToggleButton:checked PathIcon.Play">
+  		<Setter Property="IsVisible" Value="False"/>
+  	</Style>
+  	<Style Selector="ToggleButton PathIcon.Pause">
+  		<Setter Property="IsVisible" Value="False"/>
+  	</Style>
+  	<Style Selector="ToggleButton:checked PathIcon.Pause">
+  		<Setter Property="IsVisible" Value="True"/>
+  	</Style>
+  </UserControl.Styles>
+  <UserControl.Resources>
+  	<StreamGeometry x:Key="PlayIcon">M37.728,328.12c2.266,1.256,4.77,1.88,7.272,1.88c2.763,0,5.522-0.763,7.95-2.28l240-149.999 c4.386-2.741,7.05-7.548,7.05-12.72c0-5.172-2.664-9.979-7.05-12.72L52.95,2.28c-4.625-2.891-10.453-3.043-15.222-0.4 C32.959,4.524,30,9.547,30,15v300C30,320.453,32.959,325.476,37.728,328.12z</StreamGeometry>
+  	<StreamGeometry x:Key="PauseIcon">M224,435.8V76.1c0-6.7-5.4-12.1-12.2-12.1h-71.6c-6.8,0-12.2,5.4-12.2,12.1v359.7c0,6.7,5.4,12.2,12.2,12.2h71.6 C218.6,448,224,442.6,224,435.8z M371.8,64h-71.6c-6.7,0-12.2,5.4-12.2,12.1v359.7c0,6.7,5.4,12.2,12.2,12.2h71.6c6.7,0,12.2-5.4,12.2-12.2V76.1 C384,69.4,378.6,64,371.8,64z</StreamGeometry>
+  </UserControl.Resources>
 
   <DockPanel>
 	  <Menu DockPanel.Dock="Top">
@@ -29,6 +47,9 @@
 		  <MenuItem Header="Options">
 			  <MenuItem Header="Load VO" Click="LoadVO_Click"/>
 			  <Separator/>
+			  <MenuItem Header="Set WWiser Path" Click="SetWWiserPath_Click"/>
+			  <MenuItem Header="Set VGMStream Path" Click="SetVGMStreamPath_Click"/>
+			  <Separator/>
 			  <MenuItem Header="Generate TXTP" Click="GenerateTXTP_Click"/>
 			  <CheckBox Content="Export audio" IsChecked="{Binding IsExportAudio}" ToolTip.Tip="Check to export audio files after invoking wwiser."/>
 			  <CheckBox Content="Allow banks" IsChecked="{Binding AllowBanks}" ToolTip.Tip="Check to use internal banks and keep them after invoking wwiser."/>
@@ -44,9 +65,9 @@
 			  </ItemsControl>
 		  </MenuItem>
 	  </Menu>
-	  <Grid RowDefinitions="Auto,*,25" DragDrop.AllowDrop="True">
-		  <TextBox Grid.Row="0" Text="{Binding SearchText}" Watermark="Search" KeyDown="SearchText_KeyDown"/>
-		  <TreeDataGrid Grid.Row="1" Source="{Binding EntrySource}" KeyDown="EntryDataGrid_KeyDown" PointerPressed="EntryDataGrid_PointerPressed">
+	  <Grid RowDefinitions="Auto,5*,100" ColumnDefinitions="*,*" VerticalAlignment="Stretch" DragDrop.AllowDrop="True">
+		  <TextBox Grid.Row="0" Grid.ColumnSpan="2" VerticalAlignment="Center" Text="{Binding SearchText}" Watermark="Search" KeyDown="SearchText_KeyDown"/>
+		  <TreeDataGrid Grid.Row="1" Grid.ColumnSpan="2" Source="{Binding EntrySource}" KeyDown="EntryDataGrid_KeyDown" PointerPressed="EntryDataGrid_PointerPressed" DoubleTapped="TreeDataGrid_DoubleTapped">
 			  <TreeDataGrid.ContextMenu>
 				  <ContextMenu>
 					  <MenuItem Header="Copy text" Click="EntryDataGridCopyText_Click"/>
@@ -54,12 +75,22 @@
 				  </ContextMenu>
 			  </TreeDataGrid.ContextMenu>
 		  </TreeDataGrid>
-		  <Grid Grid.Row="2" ColumnDefinitions="*,*">
-			  <ProgressBar Grid.Column="0" Minimum="0" Maximum="100" Value="{Binding ProgressValue}" ShowProgressText="True" VerticalAlignment="Stretch"/> 
-			  <Border Grid.Column="1" BorderThickness="1" BorderBrush="White">
+		  <Grid Grid.Row="2" Grid.ColumnSpan="2" RowDefinitions="3*,*,*">
+			  <Grid Grid.Row="0" ColumnDefinitions="40,*" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="5,0,15,0">
+				  <ToggleButton Grid.Column="0" Background="Transparent" IsChecked="{Binding IsPlay}" Command="{Binding AudioPreviewCommand}" Margin="5,0">
+					  <Panel>
+						  <PathIcon Classes="Play" Data="{StaticResource PlayIcon}"/>
+						  <PathIcon Classes="Pause" Data="{StaticResource PauseIcon}"/>
+					  </Panel>
+				  </ToggleButton>
+				  <Slider Grid.Column="1" HorizontalAlignment="Stretch" Minimum="0" Maximum="{Binding Duration}" Value="{Binding Time}" PointerPressed="Slider_PointerPressed"/>
+			  </Grid>
+			  <ProgressBar Grid.Row="1" Minimum="0" Maximum="100" Value="{Binding ProgressValue}" ShowProgressText="True" VerticalAlignment="Stretch"/> 
+			  <Border Grid.Row="2" BorderThickness="1" BorderBrush="White">
 				  <SelectableTextBlock Text="{Binding StatusText}"/>
 			  </Border>
 		  </Grid>
 	  </Grid>
   </DockPanel>
+
 </UserControl>

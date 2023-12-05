@@ -18,17 +18,64 @@ using System.Diagnostics;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using System.Security.Cryptography;
+using System.Reactive;
+using LibVLCSharp.Shared;
+using System.Reactive.Linq;
+using System.Threading;
 
 namespace Audio.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
     private ReadOnlyObservableCollection<Entry> _filteredEntries;
+    private MediaPlayer _mediaPlayer;
+    private LibVLC _vlcLib;
+    private Entry _selectedEntry;
     private string _searchText;
     private string _statusText;
     private double _progressValue;
+    private double _duration;
+    private double _time;
+    private bool _isPlay;
+
+    public string WWiserPath { get; set; }
+    public string VGMStreamPath { get; set; }
+    public FileInfo PreviewInput { get; set; }
+    public FileInfo PreviewOutput { get; set; }
+    public List<Package> Packages { get; set; }
+    public SourceList<Entry> Entries { get; set; }
+    public ObservableCollection<Folder> Folders { get; set; }
+    public FlatTreeDataGridSource<Entry> EntrySource { get; set; }
+    public List<Entry> SelectedEntries { get; set; }
+    public string ClipboardText { get; set; }
+    public bool IsExportAudio { get; set; }
+    public bool AllowBanks { get; set; }
+    public bool EnableTXTH { get; set; }
+    public bool AllowDupes { get; set; }
+    public bool IsPlay
+    {
+        get => _isPlay;
+        set => this.RaiseAndSetIfChanged(ref _isPlay, value);
+    }
+    public ReactiveCommand<Unit, Unit> AudioPreviewCommand { get; }
     public ReadOnlyObservableCollection<Entry> FilteredEntries => _filteredEntries;
-    public List<Entry> SelectedEntries => EntrySource.RowSelection!.SelectedItems.ToList();
+    public IObservable<bool> CanPreviewAudio => this.WhenAnyValue(x => x.SelectedEntry, y => y != null && y.Type != EntryType.Bank);
+    public MediaPlayer MediaPlayer
+    {
+        get
+        {
+            if (_mediaPlayer == null)
+            {
+                _vlcLib ??= new LibVLC();
+                _mediaPlayer = new MediaPlayer(_vlcLib);
+                _mediaPlayer.EndReached += MediaPlayer_EndReached;
+                _mediaPlayer.LengthChanged += MediaPlayer_LengthChanged;
+                _mediaPlayer.TimeChanged += MediaPlayer_TimeChanged;
+            }
+
+            return _mediaPlayer;
+        }
+    }
     public string SearchText
     {
         get => _searchText;
@@ -49,6 +96,11 @@ public partial class MainViewModel : ViewModelBase
             this.RaiseAndSetIfChanged(ref _searchText, value);
         }
     }
+    public Entry SelectedEntry
+    {
+        get => _selectedEntry;
+        set => this.RaiseAndSetIfChanged(ref _selectedEntry, value);
+    }
     public string StatusText
     {
         get => _statusText;
@@ -59,26 +111,33 @@ public partial class MainViewModel : ViewModelBase
         get => _progressValue;
         set => this.RaiseAndSetIfChanged(ref _progressValue, value);
     }
-    public List<Package> Packages { get; set; }
-    public SourceList<Entry> Entries { get; set; }
-    public ObservableCollection<Folder> Folders { get; set; }
-    public FlatTreeDataGridSource<Entry> EntrySource { get; set; }
-    public string ClipboardText { get; set; }
-    public bool IsExportAudio { get; set; }
-    public bool AllowBanks { get; set; }
-    public bool EnableTXTH { get; set; }
-    public bool AllowDupes { get; set; }
+    public double Duration
+    {
+        get => _duration;
+        set => this.RaiseAndSetIfChanged(ref _duration, value);
+    }
+    public double Time
+    {
+        get => _time;
+        set => this.RaiseAndSetIfChanged(ref _time, value);
+    }
     public MainViewModel()
     {
         SearchText = "";
         ClipboardText = "";
         StatusText = "";
         IsExportAudio = true;
+        Duration = 1;
+        Time = 0;
+
+        PreviewInput = new FileInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "preview.wem"));
+        PreviewOutput = new FileInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "preview.wav"));
 
         ProgressHelper.Instance = new Progress<double>(value => ProgressValue = value);
 
         Packages = new List<Package>();
         Entries = new SourceList<Entry>();
+        SelectedEntries = new List<Entry>();
         Folders = new ObservableCollection<Folder>();
         EntrySource = new FlatTreeDataGridSource<Entry>(Array.Empty<Entry>())
         {
@@ -94,7 +153,39 @@ public partial class MainViewModel : ViewModelBase
             }
         };
         EntrySource.RowSelection!.SingleSelect = false;
+        EntrySource.RowSelection!.SelectionChanged += EntrySource_SelectionChanged;
 
+        AudioPreviewCommand = ReactiveCommand.Create(PreviewAudio, CanPreviewAudio);
+    }
+
+    private void EntrySource_SelectionChanged(object? sender, Avalonia.Controls.Selection.TreeSelectionModelSelectionChangedEventArgs<Entry> e)
+    {
+        foreach(var entry in e.DeselectedItems)
+        {
+            SelectedEntries.Remove(entry);
+        }
+        foreach(var entry in e.SelectedItems)
+        {
+            SelectedEntries.Add(entry);
+        }
+        if (SelectedEntries.Count > 0)
+        {
+            SelectedEntry = SelectedEntries[0];
+        }
+    }
+    public void Dispose()
+    {
+        if (PreviewInput.Exists)
+        {
+            PreviewInput.Delete();
+        }
+        if (PreviewOutput.Exists)
+        {
+            PreviewOutput.Delete();
+        }
+
+        _mediaPlayer?.Dispose();
+        _vlcLib?.Dispose();
     }
     public async void LoadFiles(string[] files)
     {
@@ -110,7 +201,7 @@ public partial class MainViewModel : ViewModelBase
     public async void ExportBanks(string outputDir) => await Task.Run(() => Export(Entries.Items.Where(x => x is Bank).ToList(), outputDir));
     public async void ExportAll(string outputDir) => await Task.Run(() => Export(Entries.Items.ToList(), outputDir));
     public async void LoadVO(string path) => await Task.Run(() => LoadVOInternal(path));
-    public async void GenerateTXTP(string wwiser, string file) => await Task.Run(() => GenerateTXTPInternal(wwiser, file));
+    public async void GenerateTXTP(string file) => await Task.Run(() => GenerateTXTPInternal(file));
     public async void LoadDIFF(string src, string dst) => await Task.Run(() => LoadDIFFInternal(src, dst));
     public async void DumpInfo(string output) => await Task.Run(() => DumpInfoInternal(output));
     public void SelectAll()
@@ -124,6 +215,77 @@ public partial class MainViewModel : ViewModelBase
     {
         await Task.Run(Refresh);
         StatusText = "Updated !!";
+    }
+    public void Seek(double value)
+    {
+        MediaPlayer.Time = (long)(value * 1000.0d);
+        MediaPlayer.Play();
+    }
+    public void LoadAudio()
+    {
+        IsPlay = false;
+
+        if (SelectedEntry.Type == EntryType.Bank)
+        {
+            StatusText = "Previewing Bank type is not supported !!";
+            return;
+        }
+
+        if (string.IsNullOrEmpty(VGMStreamPath))
+        {
+            StatusText = "VGMStream path must be set first !!";
+            return;
+        }
+
+        DumpEntry(SelectedEntry, PreviewInput.FullName);
+
+        StatusText = "Invoking vgmstream...";
+
+        var startInfo = new ProcessStartInfo();
+        startInfo.FileName = VGMStreamPath;
+        startInfo.ArgumentList.Add("-o");
+        startInfo.ArgumentList.Add(PreviewOutput.FullName);
+        startInfo.ArgumentList.Add(PreviewInput.FullName);
+        startInfo.WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory;
+        startInfo.UseShellExecute = false;
+        startInfo.CreateNoWindow = true;
+        using var process = Process.Start(startInfo);
+        process.WaitForExit();
+
+        if (PreviewOutput.Exists)
+        {
+            MediaPlayer.Media = new Media(_vlcLib, PreviewOutput.FullName);
+            Duration = 1;
+            Time = 0;
+        }
+
+        StatusText = $"Loaded {SelectedEntry.Name}";
+    }
+    private void PreviewAudio()
+    {
+        if (IsPlay)
+        {
+            MediaPlayer.Play();
+        }
+        else
+        {
+            MediaPlayer.Pause();
+        }
+    }
+    private void MediaPlayer_EndReached(object? sender, EventArgs e)
+    {
+        IsPlay = false;
+        ThreadPool.QueueUserWorkItem(state => MediaPlayer.Stop());
+        Duration = 1;
+        Time = 0;
+    }
+    private void MediaPlayer_LengthChanged(object? sender, MediaPlayerLengthChangedEventArgs e)
+    {
+        Duration = MediaPlayer.Length / 1000.0d;
+    }
+    private void MediaPlayer_TimeChanged(object? sender, MediaPlayerTimeChangedEventArgs e)
+    {
+        Time = MediaPlayer.Time / 1000.0d;
     }
     private async void LoadPaths(string[] paths)
     {
@@ -381,7 +543,7 @@ public partial class MainViewModel : ViewModelBase
         var parsed = await Task.Run(() => Package.Parse(path, out package));
         return (parsed, package);
     }
-    private void GenerateTXTPInternal(string wwiser, string file)
+    private void GenerateTXTPInternal(string file)
     {
         var outputDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "output");
         var banksDir = Path.Combine(outputDir, "banks");
@@ -419,7 +581,7 @@ public partial class MainViewModel : ViewModelBase
 
                 var startInfo = new ProcessStartInfo();
                 startInfo.FileName = "python";
-                startInfo.ArgumentList.Add(wwiser);
+                startInfo.ArgumentList.Add(WWiserPath);
                 startInfo.ArgumentList.Add(Path.Combine(banksDir, "**/*.bnk"));
                 startInfo.ArgumentList.Add("-g");
                 startInfo.ArgumentList.Add("-te");
@@ -457,7 +619,7 @@ public partial class MainViewModel : ViewModelBase
 
             var startInfo = new ProcessStartInfo();
             startInfo.FileName = "python";
-            startInfo.ArgumentList.Add(wwiser);
+            startInfo.ArgumentList.Add(WWiserPath);
             startInfo.ArgumentList.Add(Path.Combine(banksDir, "**/*.bnk"));
             startInfo.ArgumentList.Add("-g");
             startInfo.ArgumentList.Add("-te");

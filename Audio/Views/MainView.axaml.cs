@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
+using System.Reactive.Linq;
 
 namespace Audio.Views;
 
@@ -21,6 +22,11 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
         ViewModel = new MainViewModel();
         AddHandler(DragDrop.DragEnterEvent, MainView_DragEnter);
         AddHandler(DragDrop.DropEvent, MainView_Drop);
+        AddHandler(UnloadedEvent, MainView_Unloaded);
+    }
+    private void MainView_Unloaded(object? sender, RoutedEventArgs e)
+    {
+        ViewModel.Dispose();
     }
     private void MainView_DragEnter(object? sender, DragEventArgs e)
     {
@@ -152,14 +158,21 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
     }
     private async void LoadVO_Click(object? sender, RoutedEventArgs e)
     {
-        var file = await PickFile(new FilePickerFileType[] { FilePickerFileTypes.TextPlain });
+        var file = await PickFile([FilePickerFileTypes.TextPlain]);
 
         if (!string.IsNullOrEmpty(file))
         {
             ViewModel.LoadVO(file);
         }
     }
-
+    private async void SetWWiserPath_Click(object? sender, RoutedEventArgs e)
+    {
+        ViewModel.WWiserPath = await PickFile([new FilePickerFileType("wwiser") { Patterns = new[] { "wwiser.py" } }]);
+    }
+    private async void SetVGMStreamPath_Click(object? sender, RoutedEventArgs e)
+    {
+        ViewModel.VGMStreamPath = await PickFile([new FilePickerFileType("vgmstream") { Patterns = new[] { "*.*" }}]);
+    }
     private async void ExportAudios_Click(object? sender, RoutedEventArgs e)
     {
         var folder = await PickFolder("Select Output Folder");
@@ -235,25 +248,41 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
     }
     private async void GenerateTXTP_Click(object? sender, RoutedEventArgs e)
     {
-        var wwiser = await PickFile(new FilePickerFileType[] { new FilePickerFileType("wwiser") { Patterns = new[] { "wwiser.py" } } });
-
-        if (!string.IsNullOrEmpty(wwiser))
+        if (string.IsNullOrEmpty(ViewModel.WWiserPath))
         {
-            var file = await PickFile(new FilePickerFileType[] { FilePickerFileTypes.TextPlain });
+            ViewModel.StatusText = "WWiser path must be set first !!";
+            return;
+        }
 
-            if (!string.IsNullOrEmpty(file))
-            {
-                ViewModel.GenerateTXTP(wwiser, file);
-            }
+        var file = await PickFile([FilePickerFileTypes.TextPlain]);
+
+        if (!string.IsNullOrEmpty(file))
+        {
+            ViewModel.GenerateTXTP(file);
         }
     }
     private async void DumpInfo_Click(object? sender, RoutedEventArgs e)
     {
-        var output = await SaveFile("Packages", "json", "Select Folder", new FilePickerFileType[] { new FilePickerFileType("Packages Info") { Patterns = new[] { "*.json" } } });
+        var output = await SaveFile("Packages", "json", "Select Folder", [new FilePickerFileType("Packages Info") { Patterns = new[] { "*.json" } }]);
 
         if (!string.IsNullOrEmpty(output))
         {
             ViewModel.DumpInfo(output);
+        }
+    }
+    private void Slider_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is Slider slider)
+        {
+            ViewModel.Seek(slider.Value);
+        }
+    }
+
+    private void TreeDataGrid_DoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (e.Pointer.Captured is TextBlock _)
+        {
+            ViewModel.LoadAudio();
         }
     }
 }
