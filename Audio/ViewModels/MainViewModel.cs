@@ -175,6 +175,9 @@ public partial class MainViewModel : ViewModelBase
     }
     public void Dispose()
     {
+        _mediaPlayer?.Dispose();
+        _vlcLib?.Dispose();
+
         if (PreviewInput.Exists)
         {
             PreviewInput.Delete();
@@ -183,9 +186,6 @@ public partial class MainViewModel : ViewModelBase
         {
             PreviewOutput.Delete();
         }
-
-        _mediaPlayer?.Dispose();
-        _vlcLib?.Dispose();
     }
     public async void LoadFiles(string[] files)
     {
@@ -292,6 +292,7 @@ public partial class MainViewModel : ViewModelBase
         Entries.Clear();
         Packages.Clear();
         Folders.Clear();
+        SelectedEntries.Clear();
 
         Packages = await LoadPackages(paths);
 
@@ -373,6 +374,7 @@ public partial class MainViewModel : ViewModelBase
         Entries.Clear();
         Packages.Clear();
         Folders.Clear();
+        SelectedEntries.Clear();
 
         var srcPaths = Directory.GetFiles(src, "*.*", SearchOption.AllDirectories);
         var dstPaths = Directory.GetFiles(dst, "*.*", SearchOption.AllDirectories);
