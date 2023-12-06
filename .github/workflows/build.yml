@@ -25,7 +25,7 @@ jobs:
       run: nuget restore
       
     - name: Build for Windows
-      run: dotnet publish Audio_Desktop -c Release -r win-x64
+      run: dotnet publish Audio.Desktop -c Release -r win-x64
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
@@ -49,7 +49,7 @@ jobs:
       run: nuget restore
       
     - name: Build for Linux
-      run: dotnet publish Audio_Desktop -c Release -r linux-x64
+      run: dotnet publish Audio.Desktop -c Release -r linux-x64
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
@@ -73,7 +73,7 @@ jobs:
       run: nuget restore
       
     - name: Build for Mac
-      run: dotnet publish Audio_Desktop -c Release -r osx-x64
+      run: dotnet publish Audio.Desktop -c Release -r osx-x64
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
