@@ -38,8 +38,6 @@ public partial class MainViewModel : ViewModelBase
     private double _time;
     private bool _isPlay;
 
-    public string WWiserPath { get; set; }
-    public string VGMStreamPath { get; set; }
     public FileInfo PreviewInput { get; set; }
     public FileInfo PreviewOutput { get; set; }
     public List<Package> Packages { get; set; }
@@ -121,8 +119,46 @@ public partial class MainViewModel : ViewModelBase
         get => _time;
         set => this.RaiseAndSetIfChanged(ref _time, value);
     }
+    public string VOPath
+    {
+        get => ConfigManager.Instance.VOPath;
+        set
+        {
+            ConfigManager.Instance.VOPath = value;
+            ConfigManager.Instance.Save();
+        }
+    }
+    public string EventPath
+{
+        get => ConfigManager.Instance.EventPath;
+        set
+        {
+            ConfigManager.Instance.EventPath = value;
+            ConfigManager.Instance.Save();
+        }
+    }
+    public string WWiserPath
+{
+        get => ConfigManager.Instance.WWiserPath;
+        set
+        {
+            ConfigManager.Instance.WWiserPath = value;
+            ConfigManager.Instance.Save();
+        }
+    }
+    public string VGMStreamPath
+    {
+        get => ConfigManager.Instance.VGMStreamPath;
+        set
+        {
+            ConfigManager.Instance.VGMStreamPath = value;
+            ConfigManager.Instance.Save();
+        }
+    }
     public MainViewModel()
     {
+        ConfigManager.Instance.Load();
+
         SearchText = "";
         ClipboardText = "";
         StatusText = "";
@@ -132,8 +168,6 @@ public partial class MainViewModel : ViewModelBase
 
         PreviewInput = new FileInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "preview.wem"));
         PreviewOutput = new FileInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "preview.wav"));
-
-        ProgressHelper.Instance = new Progress<double>(value => ProgressValue = value);
 
         Packages = new List<Package>();
         Entries = new SourceList<Entry>();
@@ -156,6 +190,7 @@ public partial class MainViewModel : ViewModelBase
         EntrySource.RowSelection!.SelectionChanged += EntrySource_SelectionChanged;
 
         AudioPreviewCommand = ReactiveCommand.Create(PreviewAudio, CanPreviewAudio);
+        ProgressHelper.Instance = new Progress<double>(value => ProgressValue = value);
     }
 
     private void EntrySource_SelectionChanged(object? sender, Avalonia.Controls.Selection.TreeSelectionModelSelectionChangedEventArgs<Entry> e)
@@ -178,10 +213,6 @@ public partial class MainViewModel : ViewModelBase
         _mediaPlayer?.Dispose();
         _vlcLib?.Dispose();
 
-        if (PreviewInput.Exists)
-        {
-            PreviewInput.Delete();
-        }
         if (PreviewOutput.Exists)
         {
             PreviewOutput.Delete();
@@ -200,8 +231,8 @@ public partial class MainViewModel : ViewModelBase
     public async void ExportAudios(string outputDir) => await Task.Run(() => Export(Entries.Items.Where(x => x is not Bank).ToList(), outputDir));
     public async void ExportBanks(string outputDir) => await Task.Run(() => Export(Entries.Items.Where(x => x is Bank).ToList(), outputDir));
     public async void ExportAll(string outputDir) => await Task.Run(() => Export(Entries.Items.ToList(), outputDir));
-    public async void LoadVO(string path) => await Task.Run(() => LoadVOInternal(path));
-    public async void GenerateTXTP(string file) => await Task.Run(() => GenerateTXTPInternal(file));
+    public async void LoadVO() => await Task.Run(LoadVOInternal);
+    public async void GenerateTXTP() => await Task.Run(GenerateTXTPInternal);
     public async void LoadDIFF(string src, string dst) => await Task.Run(() => LoadDIFFInternal(src, dst));
     public async void DumpInfo(string output) => await Task.Run(() => DumpInfoInternal(output));
     public void SelectAll()
@@ -251,6 +282,11 @@ public partial class MainViewModel : ViewModelBase
         startInfo.CreateNoWindow = true;
         using var process = Process.Start(startInfo);
         process.WaitForExit();
+
+        if (PreviewInput.Exists)
+        {
+            PreviewInput.Delete();
+        }
 
         if (PreviewOutput.Exists)
         {
@@ -436,13 +472,19 @@ public partial class MainViewModel : ViewModelBase
         Entries.AddRange(diff);
         Refresh();
     }
-    private async void LoadVOInternal(string path)
+    private async void LoadVOInternal()
     {
+        if (string.IsNullOrEmpty(VOPath))
+        {
+            StatusText = "VO path must be set first !!";
+            return;
+        }
+
         StatusText = "Parsing VO file...";
 
         var voMap = new Dictionary<ulong, string>();
 
-        var vos = await File.ReadAllLinesAsync(path);
+        var vos = await File.ReadAllLinesAsync(VOPath);
         ProgressHelper.Reset();
         for (int i = 0; i < vos.Length; i++)
         {
@@ -468,7 +510,7 @@ public partial class MainViewModel : ViewModelBase
         }
 
         Refresh();
-        StatusText = $"VO file {Path.GetFileName(path)} Loaded Successfully, Matched {matched} out of {externals.Length} externals !!";
+        StatusText = $"VO file {Path.GetFileName(VOPath)} Loaded Successfully, Matched {matched} out of {externals.Length} externals !!";
     }
     private void Export(List<Entry> entries, string outputDir)
     {
@@ -545,8 +587,20 @@ public partial class MainViewModel : ViewModelBase
         var parsed = await Task.Run(() => Package.Parse(path, out package));
         return (parsed, package);
     }
-    private void GenerateTXTPInternal(string file)
+    private void GenerateTXTPInternal()
     {
+        if (string.IsNullOrEmpty(WWiserPath))
+        {
+            StatusText = "WWiser path must be set first !!";
+            return;
+        }
+
+        if (string.IsNullOrEmpty(EventPath))
+        {
+            StatusText = "Event path must be set first !!";
+            return;
+        }
+
         var outputDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "output");
         var banksDir = Path.Combine(outputDir, "banks");
         StatusText = AllowBanks ? "Exporting banks..." : "Exporting banks temporarly to temp folder...";
@@ -597,7 +651,7 @@ public partial class MainViewModel : ViewModelBase
                     startInfo.ArgumentList.Add("-gde");
                 }
                 startInfo.ArgumentList.Add("-nl");
-                startInfo.ArgumentList.Add(file);
+                startInfo.ArgumentList.Add(EventPath);
                 startInfo.ArgumentList.Add("-gl");
                 startInfo.ArgumentList.Add(folder.Name);
                 startInfo.ArgumentList.Add("-go");
@@ -635,7 +689,7 @@ public partial class MainViewModel : ViewModelBase
                 startInfo.ArgumentList.Add("-gde");
             }
             startInfo.ArgumentList.Add("-nl");
-            startInfo.ArgumentList.Add(file);
+            startInfo.ArgumentList.Add(EventPath);
             startInfo.WorkingDirectory = outputDir;
             startInfo.UseShellExecute = true;
             using var process = Process.Start(startInfo);

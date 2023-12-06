@@ -158,12 +158,19 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
     }
     private async void LoadVO_Click(object? sender, RoutedEventArgs e)
     {
-        var file = await PickFile([FilePickerFileTypes.TextPlain]);
-
-        if (!string.IsNullOrEmpty(file))
-        {
-            ViewModel.LoadVO(file);
-        }
+        ViewModel.LoadVO();
+    }
+    private async void GenerateTXTP_Click(object? sender, RoutedEventArgs e)
+    {
+        ViewModel.GenerateTXTP();
+    }
+    private async void SetVOPath_Click(object? sender, RoutedEventArgs e)
+    {
+        ViewModel.VOPath = await PickFile([FilePickerFileTypes.TextPlain]);
+    }
+    private async void SetEventPath_Click(object? sender, RoutedEventArgs e)
+    {
+        ViewModel.EventPath = await PickFile([FilePickerFileTypes.TextPlain]);
     }
     private async void SetWWiserPath_Click(object? sender, RoutedEventArgs e)
     {
@@ -230,7 +237,6 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
             }
         }
     }
-
     private void SearchText_KeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter)
@@ -244,21 +250,6 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
         if (e.KeyModifiers.Equals(KeyModifiers.Control) && e.Key == Key.A)
         {
             ViewModel.SelectAll();
-        }
-    }
-    private async void GenerateTXTP_Click(object? sender, RoutedEventArgs e)
-    {
-        if (string.IsNullOrEmpty(ViewModel.WWiserPath))
-        {
-            ViewModel.StatusText = "WWiser path must be set first !!";
-            return;
-        }
-
-        var file = await PickFile([FilePickerFileTypes.TextPlain]);
-
-        if (!string.IsNullOrEmpty(file))
-        {
-            ViewModel.GenerateTXTP(file);
         }
     }
     private async void DumpInfo_Click(object? sender, RoutedEventArgs e)
@@ -277,7 +268,6 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
             ViewModel.Seek(slider.Value);
         }
     }
-
     private void TreeDataGrid_DoubleTapped(object? sender, TappedEventArgs e)
     {
         if (e.Pointer.Captured is TextBlock _)

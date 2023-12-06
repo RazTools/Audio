@@ -45,11 +45,12 @@
 			  <MenuItem Header="Dump Info" Click="DumpInfo_Click"/>
 		  </MenuItem>
 		  <MenuItem Header="Options">
-			  <MenuItem Header="Load VO" Click="LoadVO_Click"/>
-			  <Separator/>
+			  <MenuItem Header="Set VO Path" Click="SetVOPath_Click"/>
+			  <MenuItem Header="Set Event Path" Click="SetEventPath_Click"/>
 			  <MenuItem Header="Set WWiser Path" Click="SetWWiserPath_Click"/>
 			  <MenuItem Header="Set VGMStream Path" Click="SetVGMStreamPath_Click"/>
 			  <Separator/>
+			  <MenuItem Header="Load VO" Click="LoadVO_Click"/>
 			  <MenuItem Header="Generate TXTP" Click="GenerateTXTP_Click"/>
 			  <CheckBox Content="Export audio" IsChecked="{Binding IsExportAudio}" ToolTip.Tip="Check to export audio files after invoking wwiser."/>
 			  <CheckBox Content="Allow banks" IsChecked="{Binding AllowBanks}" ToolTip.Tip="Check to use internal banks and keep them after invoking wwiser."/>
@@ -85,10 +86,10 @@
 				  </ToggleButton>
 				  <Slider Grid.Column="1" HorizontalAlignment="Stretch" Minimum="0" Maximum="{Binding Duration}" Value="{Binding Time}" PointerPressed="Slider_PointerPressed"/>
 			  </Grid>
-			  <ProgressBar Grid.Row="1" Minimum="0" Maximum="100" Value="{Binding ProgressValue}" ShowProgressText="True" VerticalAlignment="Stretch"/> 
-			  <Border Grid.Row="2" BorderThickness="1" BorderBrush="White">
+			  <Border Grid.Row="1" BorderThickness="1" BorderBrush="White">
 				  <SelectableTextBlock Text="{Binding StatusText}"/>
 			  </Border>
+			  <ProgressBar Grid.Row="2" Minimum="0" Maximum="100" Value="{Binding ProgressValue}" ShowProgressText="True" VerticalAlignment="Stretch"/> 
 		  </Grid>
 	  </Grid>
   </DockPanel>
