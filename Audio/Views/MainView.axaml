@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:Audio.ViewModels"
 			 xmlns:models="clr-namespace:Audio.Models.Entries"
+			 xmlns:controls="clr-namespace:Audio.Controls"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Audio.Views.MainView"
              x:DataType="vm:MainViewModel">
@@ -84,7 +85,7 @@
 						  <PathIcon Classes="Pause" Data="{StaticResource PauseIcon}"/>
 					  </Panel>
 				  </ToggleButton>
-				  <Slider Grid.Column="1" HorizontalAlignment="Stretch" Minimum="0" Maximum="{Binding Duration}" Value="{Binding Time}" PointerPressed="Slider_PointerPressed"/>
+				  <controls:PlaybackSlider Grid.Column="1" HorizontalAlignment="Stretch" Minimum="0" Maximum="{Binding Duration}" Value="{Binding Value}" Time="{Binding Time}" IsSeeking="{Binding IsSeeking}"/>
 			  </Grid>
 			  <Border Grid.Row="1" BorderThickness="1" BorderBrush="White">
 				  <SelectableTextBlock Text="{Binding StatusText}"/>

@@ -261,13 +261,6 @@ public partial class MainView : ReactiveUserControl<MainViewModel>
             ViewModel.DumpInfo(output);
         }
     }
-    private void Slider_PointerPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (sender is Slider slider)
-        {
-            ViewModel.Seek(slider.Value);
-        }
-    }
     private void TreeDataGrid_DoubleTapped(object? sender, TappedEventArgs e)
     {
         if (e.Pointer.Captured is TextBlock _)

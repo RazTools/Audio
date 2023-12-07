@@ -36,6 +36,7 @@ public partial class MainViewModel : ViewModelBase
     private double _progressValue;
     private double _duration;
     private double _time;
+    private double _value;
     private bool _isPlay;
 
     public FileInfo PreviewInput { get; set; }
@@ -46,6 +47,7 @@ public partial class MainViewModel : ViewModelBase
     public FlatTreeDataGridSource<Entry> EntrySource { get; set; }
     public List<Entry> SelectedEntries { get; set; }
     public string ClipboardText { get; set; }
+    public bool IsSeeking { get; set; }
     public bool IsExportAudio { get; set; }
     public bool AllowBanks { get; set; }
     public bool EnableTXTH { get; set; }
@@ -117,7 +119,16 @@ public partial class MainViewModel : ViewModelBase
     public double Time
     {
         get => _time;
-        set => this.RaiseAndSetIfChanged(ref _time, value);
+        set
+        {
+            MediaPlayer.Time = (long)value;
+            this.RaiseAndSetIfChanged(ref _time, value);
+        }
+    }
+    public double Value
+    {
+        get => _value;
+        set => this.RaiseAndSetIfChanged(ref _value, value);
     }
     public string VOPath
     {
@@ -164,7 +175,7 @@ public partial class MainViewModel : ViewModelBase
         StatusText = "";
         IsExportAudio = true;
         Duration = 1;
-        Time = 0;
+        Value = 0;
 
         PreviewInput = new FileInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "preview.wem"));
         PreviewOutput = new FileInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "preview.wav"));
@@ -247,11 +258,6 @@ public partial class MainViewModel : ViewModelBase
         await Task.Run(Refresh);
         StatusText = "Updated !!";
     }
-    public void Seek(double value)
-    {
-        MediaPlayer.Time = (long)(value * 1000.0d);
-        MediaPlayer.Play();
-    }
     public void LoadAudio()
     {
         IsPlay = false;
@@ -292,7 +298,7 @@ public partial class MainViewModel : ViewModelBase
         {
             MediaPlayer.Media = new Media(_vlcLib, PreviewOutput.FullName);
             Duration = 1;
-            Time = 0;
+            Value = 0;
         }
 
         StatusText = $"Loaded {SelectedEntry.Name}";
@@ -313,15 +319,18 @@ public partial class MainViewModel : ViewModelBase
         IsPlay = false;
         ThreadPool.QueueUserWorkItem(state => MediaPlayer.Stop());
         Duration = 1;
-        Time = 0;
+        Value = 0;
     }
     private void MediaPlayer_LengthChanged(object? sender, MediaPlayerLengthChangedEventArgs e)
     {
-        Duration = MediaPlayer.Length / 1000.0d;
+        Duration = MediaPlayer.Length;
     }
     private void MediaPlayer_TimeChanged(object? sender, MediaPlayerTimeChangedEventArgs e)
     {
-        Time = MediaPlayer.Time / 1000.0d;
+        if (!IsSeeking)
+        {
+            Value = MediaPlayer.Time;
+        }
     }
     private async void LoadPaths(string[] paths)
     {
