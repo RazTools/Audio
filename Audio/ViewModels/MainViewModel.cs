@@ -777,6 +777,7 @@ public partial class MainViewModel : ViewModelBase
             }
         }
     }
+
     private void DumpInfoInternal(string output)
     {
         var str = JsonSerializer.Serialize(Entries.Items, EntryContext.Default.IEnumerableEntry);
