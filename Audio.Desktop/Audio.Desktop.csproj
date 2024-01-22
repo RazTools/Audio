@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-	<SelfContained>True</SelfContained>
+	<SelfContained>true</SelfContained>
 	<PublishTrimmed>true</PublishTrimmed>
 	<PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>

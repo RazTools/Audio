@@ -22,7 +22,7 @@ jobs:
         dotnet-version: 8.0.x
       
     - name: Restore the application
-      run: nuget restore
+      run: dotnet restore
       
     - name: Build for Windows
       run: dotnet publish Audio.Desktop -c Release -r win-x64
@@ -30,7 +30,7 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: net8.0_windows
+        name: net8.0_windows-${{ github.sha }}
         path: Audio.Desktop/bin/Release/net8.0/win-x64/publish
 
   linux:
@@ -46,7 +46,7 @@ jobs:
         dotnet-version: 8.0.x
       
     - name: Restore the application
-      run: nuget restore
+      run: dotnet restore
       
     - name: Build for Linux
       run: dotnet publish Audio.Desktop -c Release -r linux-x64
@@ -54,7 +54,7 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: net8.0_linux
+        name: net8.0_linux-${{ github.sha }}
         path: Audio.Desktop/bin/Release/net8.0/linux-x64/publish
 
   osx:
@@ -70,7 +70,7 @@ jobs:
         dotnet-version: 8.0.x
       
     - name: Restore the application
-      run: nuget restore
+      run: dotnet restore
       
     - name: Build for Mac
       run: dotnet publish Audio.Desktop -c Release -r osx-x64
@@ -78,5 +78,5 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: net8.0_osx
+        name: net8.0_osx-${{ github.sha }}
         path: Audio.Desktop/bin/Release/net8.0/osx-x64/publish
