@@ -17,12 +17,8 @@ public class ConfigManager
     {
         try
         {
-            var options = new JsonSerializerOptions()
-            {
-                WriteIndented = true
-            };
             var json = File.ReadAllText(ConfigPath);
-            var clone = JsonSerializer.Deserialize<ConfigManager>(json, options);
+            var clone = JsonSerializer.Deserialize(json, ConfigManagerContext.Default.ConfigManager);
 
             VOPath = clone.VOPath;
             EventPath = clone.EventPath;
@@ -35,11 +31,7 @@ public class ConfigManager
     {
         try
         {
-            var options = new JsonSerializerOptions()
-            {
-                WriteIndented = true
-            };
-            var str = JsonSerializer.Serialize(this, options);
+            var str = JsonSerializer.Serialize(this, ConfigManagerContext.Default.ConfigManager);
             File.WriteAllText(ConfigPath, str);
         }
         catch (Exception) { }
