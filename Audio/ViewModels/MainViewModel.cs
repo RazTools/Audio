@@ -564,7 +564,7 @@ public partial class MainViewModel : ViewModelBase
         {
             using var fs = fileInfo.OpenWrite();
             using var writer = new StreamWriter(fs);
-            writer.WriteLine($"body_file = {Path.GetRelativePath(fileInfo.FullName, entry.Source)}");
+            writer.WriteLine($"body_file = {entry.Source}");
             writer.WriteLine($"subfile_offset = {entry.Offset}");
             writer.WriteLine($"subfile_size = {entry.Size}");
             writer.WriteLine("subfile_extension = wem");
@@ -626,47 +626,61 @@ public partial class MainViewModel : ViewModelBase
             StatusText = "No banks found !!";
             return;
         }
-        foreach (var bank in banks)
+
+        ProgressHelper.Reset();
+        for (int i = 0; i < banks.Count; i++)
         {
+            var bank = banks[i];
             var outputPath = Path.Combine(banksDir, bank.Location);
             DumpEntry(bank, outputPath);
+            ProgressHelper.Report(i, banks.Count);
         }
+
+        string txtpDir;
+
+        var startInfo = new ProcessStartInfo();
+        startInfo.FileName = "python";
+        startInfo.WorkingDirectory = outputDir;
+        startInfo.UseShellExecute = true;
+        startInfo.ArgumentList.Add(WWiserPath);
+        startInfo.ArgumentList.Add(Path.Combine(banksDir, "**/*.bnk"));
+        startInfo.ArgumentList.Add("-d");
+        startInfo.ArgumentList.Add("txt");
+        startInfo.ArgumentList.Add("-g");
+        startInfo.ArgumentList.Add("-te");
+        startInfo.ArgumentList.Add("-gra");
+        if (!AllowBanks)
+        {
+            startInfo.ArgumentList.Add("-gbs");
+        }
+        if (AllowDupes)
+        {
+            startInfo.ArgumentList.Add("-gd");
+            startInfo.ArgumentList.Add("-gde");
+        }
+        startInfo.ArgumentList.Add("-nl");
+        startInfo.ArgumentList.Add(EventPath);
 
         if (Folders.Any(x => x.IsChecked))
         {
-            foreach (var folder in Folders)
+            ProgressHelper.Reset();
+            for (int i = 0; i < Folders.Count; i++)
             {
+                var folder = Folders[i];
+
                 if (!folder.IsChecked)
                     continue;
 
                 StatusText = $"Invoking wwiser for language {folder.Name}...";
 
-                var txtpDir = Path.Combine(outputDir, "txtp", folder.Name);
+                txtpDir = Path.Combine(outputDir, "txtp", folder.Name);
                 Directory.CreateDirectory(Path.GetDirectoryName(txtpDir));
 
-                var startInfo = new ProcessStartInfo();
-                startInfo.FileName = "python";
-                startInfo.ArgumentList.Add(WWiserPath);
-                startInfo.ArgumentList.Add(Path.Combine(banksDir, "**/*.bnk"));
-                startInfo.ArgumentList.Add("-g");
-                startInfo.ArgumentList.Add("-te");
-                if (!AllowBanks)
-                {
-                    startInfo.ArgumentList.Add("-gbs");
-                }
-                if (AllowDupes)
-                {
-                    startInfo.ArgumentList.Add("-gd");
-                    startInfo.ArgumentList.Add("-gde");
-                }
-                startInfo.ArgumentList.Add("-nl");
-                startInfo.ArgumentList.Add(EventPath);
                 startInfo.ArgumentList.Add("-gl");
                 startInfo.ArgumentList.Add(folder.Name);
                 startInfo.ArgumentList.Add("-go");
                 startInfo.ArgumentList.Add(Path.GetRelativePath(outputDir, txtpDir));
-                startInfo.WorkingDirectory = outputDir;
-                startInfo.UseShellExecute = true;
+
                 using var process = Process.Start(startInfo);
                 process.WaitForExit();
 
@@ -674,33 +688,21 @@ public partial class MainViewModel : ViewModelBase
                 {
                     ExportAudio(banks, txtpDir);
                 }
+
+                ProgressHelper.Report(i, Folders.Count);
+
+                startInfo.ArgumentList.Remove("-gl");
+                startInfo.ArgumentList.Remove(folder.Name);
+                startInfo.ArgumentList.Remove("-go");
+                startInfo.ArgumentList.Remove(Path.GetRelativePath(outputDir, txtpDir));
             }
         }
         else
         {
             StatusText = "Invoking wwiser...";
 
-            var txtpDir = Path.Combine(outputDir, "txtp");
+            txtpDir = Path.Combine(outputDir, "txtp");
 
-            var startInfo = new ProcessStartInfo();
-            startInfo.FileName = "python";
-            startInfo.ArgumentList.Add(WWiserPath);
-            startInfo.ArgumentList.Add(Path.Combine(banksDir, "**/*.bnk"));
-            startInfo.ArgumentList.Add("-g");
-            startInfo.ArgumentList.Add("-te");
-            if (!AllowBanks)
-            {
-                startInfo.ArgumentList.Add("-gbs");
-            }
-            if (AllowDupes)
-            {
-                startInfo.ArgumentList.Add("-gd");
-                startInfo.ArgumentList.Add("-gde");
-            }
-            startInfo.ArgumentList.Add("-nl");
-            startInfo.ArgumentList.Add(EventPath);
-            startInfo.WorkingDirectory = outputDir;
-            startInfo.UseShellExecute = true;
             using var process = Process.Start(startInfo);
             process.WaitForExit();
 
@@ -736,13 +738,16 @@ public partial class MainViewModel : ViewModelBase
 
         var files = Directory.GetFiles(txtpDir, "*.txtp");
         StatusText = $"Found {files.Length} TXTP, proccessing...";
-        foreach (var f in files)
+
+        ProgressHelper.Reset();
+        for (int i = 0; i < files.Length; i++)
         {
+            var f = files[i];
             var hasTXTH = false;
             var lines = File.ReadAllLines(f);
-            for (int i = 0; i < lines.Length; i++)
+            for (int j = 0; j < lines.Length; j++)
             {
-                var line = lines[i];
+                var line = lines[j];
 
                 if (line.StartsWith('#'))
                     break;
@@ -760,7 +765,7 @@ public partial class MainViewModel : ViewModelBase
                             if (EnableTXTH)
                             {
                                 DumpTXTH(target, outputPath);
-                                lines[i] = line.Replace(".wem", ".wem.txth");
+                                lines[j] = line.Replace(".wem", ".wem.txth");
                                 hasTXTH = true;
                             }
                             else
@@ -775,6 +780,8 @@ public partial class MainViewModel : ViewModelBase
             {
                 File.WriteAllLines(f, lines);
             }
+
+            ProgressHelper.Report(i, files.Length);
         }
     }
 

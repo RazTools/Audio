@@ -15,7 +15,7 @@ public record Entry
     public EntryType Type { get; }
     public string Source => Package.Path;
     public virtual string Location => $"{FolderName}/{Name}";
-    public virtual string FolderName => Package.FoldersDict[Folder];
+    public virtual string FolderName => Package.FoldersDict.TryGetValue(Folder, out var name) ? name : "None";
 
     public Entry(EntryType type)
     {

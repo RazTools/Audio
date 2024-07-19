@@ -6,7 +6,7 @@ using System.IO;
 namespace Audio.Models.Chunks;
 public record STID : Chunk
 {
-    public bool IsBankIDToName { get; set; }
+    public uint StringType { get; set; }
     public Dictionary<uint, string> BankIDToName { get; set; }
 
     public STID(Chunk chunk) : base(chunk)
@@ -16,7 +16,7 @@ public record STID : Chunk
 
     public new void Parse(BinaryReader reader)
     {
-        IsBankIDToName = Convert.ToBoolean(reader.ReadUInt32());
+        StringType = reader.ReadUInt32();
         var count = reader.ReadInt32();
         BankIDToName.EnsureCapacity(count);
         for (int i = 0; i < count; i++)
