@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "Audio.CLI": {
+      "commandName": "Project"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+﻿namespace Audio.Chunks.Types.HIRC;
+public enum PluginID
+{
+    BANK,
+    PCM,
+    ADPCM,
+    XMA,
+    VORBIS,
+    WIIADPCM,
+    PCMEX = 0x7,
+    EXTERNAL_SOURCE,
+    XWMA,
+    AAC,
+    FILE_PACKAGE,
+    ATRAC9,
+    HE_VAG,
+    PROFILERCAPTURE,
+    ANALYSISFILE,
+    MIDI,
+    OPUSNX,
+    CAF,
+    OPUS,
+    OPUS_WEM,
+    OPUS_WEM_STATS,
+    SONY360,
+}
