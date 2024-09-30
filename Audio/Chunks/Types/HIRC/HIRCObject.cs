@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace Audio.Chunks.Types.HIRC;
 
@@ -31,8 +32,10 @@ public abstract record HIRCObject : IBankReadable
         // { HIRCType.TimeMod, x => new HIRCObject(x) },
     };
 
-    public HeaderInfo Header { get; private set; }
+    [JsonIgnore]
     public Chunks.HIRC? HIRC { get; set; }
+
+    public HeaderInfo Header { get; private set; }
     public FNVID<uint> ID { get; set; }
 
     public HIRCObject(HeaderInfo header)

@@ -64,7 +64,7 @@ public class Program
                     types.Add(EntryType.EmbeddedSound);
                 }
 
-                manager.DumpEntries(Path.Combine(o.Output.FullName, "Audio"), types);
+                manager.DumpEntries(o.Output.FullName, types);
             }
         }
 

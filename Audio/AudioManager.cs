@@ -189,8 +189,15 @@ public class AudioManager
     }
     public void DumpEntries(string outputDirectory, IEnumerable<EntryType> types)
     {
-        PlaylistWriter? writer = Playlist ? new PlaylistWriter(Path.Combine(outputDirectory, "Audio")) : null;
         Entry[] entries = Entries.OfType<Entry>().Where(x => types.Contains(x.Type)).ToArray();
+
+        PlaylistWriter? writer = null;
+        if (Playlist && types.Any(x => x != EntryType.Bank))
+        {
+            string playlistOutputPath = Path.Combine(outputDirectory, "Audio");
+            Directory.CreateDirectory(playlistOutputPath);
+            writer = new(playlistOutputPath);
+        }
 
         int dumped = 0;
         foreach (Entry? entry in entries)
