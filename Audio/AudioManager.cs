@@ -145,14 +145,12 @@ public class AudioManager
     }
     public void ProcessEvents()
     {
-        IEnumerable<Event> events = Hierarchies.SelectMany(x => x.Objects.OfType<Event>().Where(x => !string.IsNullOrEmpty(x.ID.String)));
+        IEnumerable<Event> events = Hierarchies.SelectMany(x => x.Objects.OfType<Event>());
         int count = events.Count();
 
         int resolved = 0;
         foreach (Event evt in events)
         {
-            if (string.IsNullOrEmpty(evt.ID.String)) continue;
-
             EventInfo eventInfo = new(evt.ID);
             evt.HIRC?.ResolveObject(evt, eventInfo);
             Events.Add(eventInfo);
