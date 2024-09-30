@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "test" ]
     paths-ignore:
       - '**/README.md'
       - '.github/**'
@@ -25,13 +25,13 @@ jobs:
       run: dotnet restore
       
     - name: Build for Windows
-      run: dotnet publish Audio.Desktop -c Release -r win-x64
+      run: dotnet publish Audio.CLI -c Release -r win-x64
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
         name: net8.0_windows-${{ github.sha }}
-        path: Audio.Desktop/bin/Release/net8.0/win-x64/publish
+        path: Audio.CLI/bin/Release/net8.0/win-x64/publish
 
   linux:
     runs-on: ubuntu-latest
@@ -49,13 +49,13 @@ jobs:
       run: dotnet restore
       
     - name: Build for Linux
-      run: dotnet publish Audio.Desktop -c Release -r linux-x64
+      run: dotnet publish Audio.CLI -c Release -r linux-x64
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
         name: net8.0_linux-${{ github.sha }}
-        path: Audio.Desktop/bin/Release/net8.0/linux-x64/publish
+        path: Audio.CLI/bin/Release/net8.0/linux-x64/publish
 
   osx:
     runs-on: ubuntu-latest
@@ -73,10 +73,10 @@ jobs:
       run: dotnet restore
       
     - name: Build for Mac
-      run: dotnet publish Audio.Desktop -c Release -r osx-x64
+      run: dotnet publish Audio.CLI -c Release -r osx-x64
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
         name: net8.0_osx-${{ github.sha }}
-        path: Audio.Desktop/bin/Release/net8.0/osx-x64/publish
+        path: Audio.CLI/bin/Release/net8.0/osx-x64/publish
