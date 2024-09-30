@@ -8,9 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Update="Resources\packed_codebooks_aoTuV_603.bin">
+    <ContentWithTargetPath Include="Resources\packed_codebooks_aoTuV_603.bin">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+	  <TargetPath>packed_codebooks_aoTuV_603.bin</TargetPath>
+    </ContentWithTargetPath>
   </ItemGroup>
 
 </Project>
