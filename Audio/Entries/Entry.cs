@@ -1,6 +1,5 @@
 ﻿using Audio.Chunks;
 using Audio.Conversion;
-using Audio.Utils;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
@@ -13,9 +12,9 @@ public abstract record Entry : IBankReadable
     public uint Offset { get; set; }
     public uint Size { get; set; }
     public uint Folder { get; set; }
-    public string? Name { get; set; }
     public EntryType Type { get; set; }
     public string Source => Parent?.Source ?? "";
+    public virtual string? Name { get; set; }
     public virtual string? Location => $"{FolderName}/{Name}";
     public virtual string FolderName => Parent is AKPK akpk && akpk.FoldersDict.TryGetValue(Folder, out string? name) == true ? name : "None";
 
