@@ -37,7 +37,7 @@ public class Program
 
             if (o.Tags)
             {
-                await manager.ProcessEvents();
+                manager.ProcessEvents();
             }
 
             if (o.Output != null)
