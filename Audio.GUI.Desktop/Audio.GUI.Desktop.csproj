@@ -15,6 +15,28 @@
 
   <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
 	<PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
+
+    <VlcWindowsX64IncludeFiles Include="libvlc.dll" />
+    <VlcWindowsX64IncludeFiles Include="libvlccore.dll" />
+    <VlcWindowsX64IncludeFiles Include="plugins\access\libimem_plugin.dll" />
+    <VlcWindowsX64IncludeFiles Include="plugins\audio_filter\libaudio_format_plugin.dll" />
+    <VlcWindowsX64IncludeFiles Include="plugins\audio_filter\libtrivial_channel_mixer_plugin.dll" />
+    <VlcWindowsX64IncludeFiles Include="plugins\audio_output\libmmdevice_plugin.dll" />
+    <VlcWindowsX64IncludeFiles Include="plugins\audio_output\libwasapi_plugin.dll" />
+    <VlcWindowsX64IncludeFiles Include="plugins\codec\libadpcm_plugin.dll" />
+    <VlcWindowsX64IncludeFiles Include="plugins\codec\libavcodec_plugin.dll" />
+    <VlcWindowsX64IncludeFiles Include="plugins\codec\liboggspots_plugin.dll" />
+
+    <VlcWindowsX86IncludeFiles Include="libvlc.dll" />
+    <VlcWindowsX86IncludeFiles Include="libvlccore.dll" />
+    <VlcWindowsX86IncludeFiles Include="plugins\access\libimem_plugin.dll" />
+    <VlcWindowsX86IncludeFiles Include="plugins\audio_filter\libaudio_format_plugin.dll" />
+    <VlcWindowsX86IncludeFiles Include="plugins\audio_filter\libtrivial_channel_mixer_plugin.dll" />
+    <VlcWindowsX86IncludeFiles Include="plugins\audio_output\libmmdevice_plugin.dll" />
+    <VlcWindowsX86IncludeFiles Include="plugins\audio_output\libwasapi_plugin.dll" />
+    <VlcWindowsX86IncludeFiles Include="plugins\codec\libadpcm_plugin.dll" />
+    <VlcWindowsX86IncludeFiles Include="plugins\codec\libavcodec_plugin.dll" />
+    <VlcWindowsX86IncludeFiles Include="plugins\codec\liboggspots_plugin.dll" />
   </ItemGroup>
   
   <ItemGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
