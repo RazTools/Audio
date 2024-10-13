@@ -30,16 +30,16 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: net8.0_CLI_windows-${{ github.sha }}
+        name: net8.0_windows-${{ github.sha }}
         path: Audio.CLI/bin/Release/net8.0/win-x64/publish
 
     - name: Build GUI for Windows
-      run: dotnet publish Audio.GUI -c Release -r win-x64
+      run: dotnet publish Audio.GUI.Desktop -c Release -r win-x64
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: net8.0_GUI_windows-${{ github.sha }}
+        name: net8.0_windows-${{ github.sha }}
         path: Audio.GUI/bin/Release/net8.0/win-x64/publish
 
   linux:
@@ -63,16 +63,16 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: net8.0_GUI_linux-${{ github.sha }}
+        name: net8.0_linux-${{ github.sha }}
         path: Audio.CLI/bin/Release/net8.0/linux-x64/publish
 
     - name: Build GUI for Linux
-      run: dotnet publish Audio.GUI -c Release -r linux-x64
+      run: dotnet publish Audio.GUI.Desktop -c Release -r linux-x64
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: net8.0_GUI_linux-${{ github.sha }}
+        name: net8.0_linux-${{ github.sha }}
         path: Audio.GUI/bin/Release/net8.0/linux-x64/publish
 
   osx:
@@ -96,14 +96,14 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: net8.0_CLI_osx-${{ github.sha }}
+        name: net8.0_osx-${{ github.sha }}
         path: Audio.CLI/bin/Release/net8.0/osx-x64/publish
 
     - name: Build GUI for Mac
-      run: dotnet publish Audio.GUI -c Release -r osx-x64
+      run: dotnet publish Audio.GUI.Desktop -c Release -r osx-x64
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: net8.0_GUI_osx-${{ github.sha }}
+        name: net8.0_osx-${{ github.sha }}
         path: Audio.GUI/bin/Release/net8.0/osx-x64/publish
