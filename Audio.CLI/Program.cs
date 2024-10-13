@@ -5,8 +5,8 @@ namespace Audio.CLI;
 
 public class Program
 {
-    public static void Main(string[] args) => CommandLine.Init([@"C:\Users\Razmoth\AppData\LocalLow\CollapseLauncher\GameFolder\GIGlb\Genshin Impact game\GenshinImpact_Data\StreamingAssets", @"F:\New folder\test", "--audio", "--convert", "--externals", @"F:\New folder\voice.txt"]);
-    public static async Task Run(Options o)
+    public static void Main(string[] args) => CommandLine.Init(args);
+    public static void Run(Options o)
     {
         Logger.TryRegister(new ConsoleLogger());
 
