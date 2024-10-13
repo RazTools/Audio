@@ -136,10 +136,12 @@ public class PTADPCM : WWiseRIFFFile
                     ArrayPool<short>.Shared.Return(buffer);
                 }
 
+                stream.Position = 0;
                 return true;
             }
         }
 
+        stream.Position = 0;
         return false;
     }
 }

@@ -22,12 +22,9 @@ public record AKPK : Chunk
         {
             foreach (Bank bank in Banks)
             {
-                yield return bank;
-
-                foreach (EmbeddedSound embeddedSound in bank.BKHD?.EmbeddedSounds ?? [])
+                foreach (Entry entry in bank.Entries)
                 {
-                    embeddedSound.Bank ??= bank;
-                    yield return embeddedSound;
+                    yield return entry;
                 }
             }
 

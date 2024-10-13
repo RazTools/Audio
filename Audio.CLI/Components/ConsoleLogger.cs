@@ -1,4 +1,4 @@
-﻿namespace Audio;
+﻿namespace Audio.CLI;
 public class ConsoleLogger : ILogger
 {
     public void Log(LogLevel logLevel, string message)

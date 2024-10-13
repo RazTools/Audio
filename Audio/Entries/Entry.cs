@@ -16,7 +16,7 @@ public abstract record Entry : IBankReadable
     public string Source => Parent?.Source ?? "";
     public virtual string? Name { get; set; }
     public virtual string? Location => $"{FolderName}/{Name}";
-    public virtual string FolderName => Parent is AKPK akpk && akpk.FoldersDict.TryGetValue(Folder, out string? name) == true ? name : "None";
+    public virtual string FolderName => (Parent is AKPK akpk && akpk.FoldersDict.TryGetValue(Folder, out string? name) == true) ? name : "None";
 
     public Entry(EntryType type)
     {
@@ -60,9 +60,8 @@ public abstract record Entry : IBankReadable
             {
                 inputStream.ReadExactly(bufferSpan);
 
-                long pos = outStream.Position;
                 outStream.Write(bufferSpan);
-                outStream.Position = pos;
+                outStream.Position = 0;
 
                 return true;
             }
@@ -78,14 +77,30 @@ public abstract record Entry : IBankReadable
 
         return false;
     }
+    public bool TryConvert(Stream outStream, [NotNullWhen(true)] out WWiseRIFFFile? audioFile)
+    {
+        try
+        {
+            using MemoryStream ms = new();
+            if (Type is not EntryType.Bank && TryWrite(ms) && WWiseRIFFFile.TryParse(ms, out audioFile))
+            {
+                return audioFile.TryWrite(outStream);
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.Error($"Error while converting audio file {Name}, {e}");
+        }
+
+        audioFile = null;
+        return false;
+    }
     public virtual bool TryDump(string outputDirectory, bool convert, [NotNullWhen(true)] out string? location)
     {
         location = Location;
 
         if (!string.IsNullOrEmpty(location))
         {
-            WWiseRIFFFile? audioFile = null;
-
             string outputPath = Path.Combine(outputDirectory, location);
             string? dirPath = Path.GetDirectoryName(outputPath);
             if (!string.IsNullOrEmpty(dirPath))
@@ -93,60 +108,37 @@ public abstract record Entry : IBankReadable
                 Directory.CreateDirectory(dirPath);
             }
 
-            if (convert && TryParse(out audioFile))
+            
+            if (convert)
             {
-                if (!string.IsNullOrEmpty(audioFile.Extension))
+                using MemoryStream memoryStream = new();
+                if (TryConvert(memoryStream, out WWiseRIFFFile? audioFile) && !string.IsNullOrEmpty(audioFile.Extension))
                 {
                     location = Path.ChangeExtension(location, audioFile.Extension);
                     outputPath = Path.Combine(outputDirectory, location);
                 }
-            }
 
-            if (File.Exists(outputPath))
-            {
-                return true;
-            }
-
-            bool dumped;
-            using (FileStream fileStream = File.OpenWrite(outputPath))
-            {
-                if (audioFile != null)
+                if (File.Exists(outputPath))
                 {
-                    dumped = audioFile.TryWrite(fileStream);
-                    audioFile.Dispose();
+                    return true;
                 }
-                else
+
+                using FileStream fileStream = File.OpenWrite(outputPath);
+                memoryStream.CopyTo(fileStream);
+                return true;
+            }
+            else
+            {
+                if (File.Exists(outputPath))
                 {
-                    dumped = TryWrite(fileStream);
+                    return true;
                 }
-            }
 
-            if (dumped)
-            {
-                return true;
-            }
-
-            File.Delete(outputPath);
-        }
-
-        return false;
-    }
-    private bool TryParse([NotNullWhen(true)] out WWiseRIFFFile? audioFile)
-    {
-        try
-        {
-            MemoryStream ms = new();
-            if (Type is not EntryType.Bank && TryWrite(ms) && WWiseRIFFFile.TryParse(ms, out audioFile))
-            {
-                return true;
+                using FileStream fileStream = File.OpenWrite(outputPath);
+                return TryWrite(fileStream);
             }
         }
-        catch (Exception e)
-        {
-            Logger.Error($"Error while parsing audio file {Name}, {e}");
-        }
 
-        audioFile = null;
         return false;
     }
 }

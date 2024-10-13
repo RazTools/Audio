@@ -1,0 +1,15 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Audio.GUI.App"
+             xmlns:gui="clr-namespace:Audio.GUI"
+             RequestedThemeVariant="Default">
+             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+	<Application.DataTemplates>
+		<gui:ViewLocator/>
+	</Application.DataTemplates>
+	
+    <Application.Styles>
+        <FluentTheme />
+		<StyleInclude Source="avares://Avalonia.Controls.TreeDataGrid/Themes/Fluent.axaml"/>
+    </Application.Styles>
+</Application>

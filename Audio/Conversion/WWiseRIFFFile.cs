@@ -5,7 +5,6 @@ using System.Diagnostics.CodeAnalysis;
 namespace Audio.Conversion;
 public class WWiseRIFFFile : IDisposable
 {
-
     public virtual string Extension => ".wem";
     public WWiseRIFFHeader Header { get; private set; }
 
@@ -21,6 +20,7 @@ public class WWiseRIFFFile : IDisposable
             Header.Stream.Position = Header.Offset;
             Header.Stream.CopyTo(stream);
 
+            stream.Position = 0;
             return true;
         }
         catch(Exception e)
@@ -28,6 +28,7 @@ public class WWiseRIFFFile : IDisposable
             Logger.Warning($"Error while dumping RIFF file, {e}");
         }
 
+        stream.Position = 0; 
         return false;
     }
 

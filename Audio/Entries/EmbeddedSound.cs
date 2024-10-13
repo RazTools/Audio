@@ -27,7 +27,6 @@ public record EmbeddedSound : TaggedEntry<uint>
     public override void Read(BankReader reader)
     {
         ID = FNVID<uint>.Read(reader);
-        Name = ID.ToString();
         Offset = reader.ReadUInt32();
         Size = reader.ReadUInt32();
     }

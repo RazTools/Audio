@@ -2,6 +2,8 @@
 public abstract record TaggedEntry<T> : Entry where T : struct
 {
     public FNVID<T> ID { get; set; }
+    public Dictionary<FNVID<T>, HashSet<EventTag>> Events { get; set; } = [];
+    public override string? Name => ID.ToString();
 
     public TaggedEntry(EntryType type) : base(type)
     {
@@ -11,7 +13,6 @@ public abstract record TaggedEntry<T> : Entry where T : struct
     public override void Read(BankReader reader)
     {
         ID = FNVID<T>.Read(reader);
-        Name = ID.ToString();
 
         base.Read(reader);
     }

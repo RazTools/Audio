@@ -144,10 +144,13 @@ public class Vorbis : WWiseRIFFFile
                     return false;
                 }
 
+                oggStream.Close();
+                stream.Position = 0;
                 return true;
             }
         }
 
+        stream.Position = 0;
         return false;
     }
 

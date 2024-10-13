@@ -5,10 +5,10 @@ namespace Audio.CLI;
 
 public class Program
 {
-    public static void Main(string[] args) => CommandLine.Init(args);
-    public static void Run(Options o)
+    public static void Main(string[] args) => CommandLine.Init([@"C:\Users\Razmoth\AppData\LocalLow\CollapseLauncher\GameFolder\GIGlb\Genshin Impact game\GenshinImpact_Data\StreamingAssets", @"F:\New folder\test", "--audio", "--convert", "--externals", @"F:\New folder\voice.txt"]);
+    public static async Task Run(Options o)
     {
-        Logger.Instance = new ConsoleLogger();
+        Logger.TryRegister(new ConsoleLogger());
 
         AudioManager manager = new() { Convert = o.Convert, Playlist = o.Playlist };
 
@@ -22,49 +22,51 @@ public class Program
             files.Add(o.Input);
         }
 
-        manager.LoadFiles([.. files]);
-
-        if (o.Externals != null)
+        int loaded = manager.LoadFiles([.. files]);
+        if (loaded > 0)
         {
-            manager.UpdateExternals(File.ReadAllLines(o.Externals.FullName));
-        }
-
-        if (o.Events != null)
-        {
-            manager.UpdatedEvents(File.ReadAllLines(o.Events.FullName));
-        }
-
-        if (o.Tags)
-        {
-            manager.ProcessEvents();
-        }
-
-        if (o.Output != null)
-        {
-            o.Output.Create();
-
-            if (o.Hierarchy)
+            if (o.Externals != null)
             {
-                manager.DumpHierarchies(o.Output.FullName);
+                manager.UpdateExternals(File.ReadAllLines(o.Externals.FullName));
             }
 
-            if (o.Bank || o.Audio)
+            if (o.Events != null)
             {
-                List<EntryType> types = [];
+                manager.UpdatedEvents(File.ReadAllLines(o.Events.FullName));
+            }
 
-                if (o.Bank)
+            if (o.Tags)
+            {
+                await manager.ProcessEvents();
+            }
+
+            if (o.Output != null)
+            {
+                o.Output.Create();
+
+                if (o.Hierarchy)
                 {
-                    types.Add(EntryType.Bank);
+                    manager.DumpHierarchies(o.Output.FullName);
                 }
 
-                if (o.Audio)
+                if (o.Bank || o.Audio)
                 {
-                    types.Add(EntryType.Sound);
-                    types.Add(EntryType.External);
-                    types.Add(EntryType.EmbeddedSound);
-                }
+                    List<EntryType> types = [];
 
-                manager.DumpEntries(o.Output.FullName, types);
+                    if (o.Bank)
+                    {
+                        types.Add(EntryType.Bank);
+                    }
+
+                    if (o.Audio)
+                    {
+                        types.Add(EntryType.Sound);
+                        types.Add(EntryType.External);
+                        types.Add(EntryType.EmbeddedSound);
+                    }
+
+                    manager.DumpEntries(o.Output.FullName, types);
+                }
             }
         }
 

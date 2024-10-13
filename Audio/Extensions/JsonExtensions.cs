@@ -17,10 +17,19 @@ public static class JsonExtensions
         _options.Converters.Add(new FNVIDJsonConverter());
         _options.TypeInfoResolverChain.Add(EntryContext.Default);
         _options.TypeInfoResolverChain.Add(FNVIDContext.Default);
-        _options.TypeInfoResolverChain.Add(ConfigManagerContext.Default);
         _options.TypeInfoResolver = new DefaultJsonTypeInfoResolver()
             .WithAddedModifier(PolymorphicTypeInfo<HIRCObject>)
             .WithAddedModifier(PolymorphicTypeInfo<IActionParameter>);
+    }
+
+    public static void RegisterTypeInfo(IJsonTypeInfoResolver resolver)
+    {
+        _options.TypeInfoResolverChain.Add(resolver);
+    }
+
+    public static void UnregisterTypeInfo(IJsonTypeInfoResolver resolver)
+    {
+        _options.TypeInfoResolverChain.Remove(resolver);
     }
 
     public static string Serialize<T>(this T? value) => JsonSerializer.Serialize(value, _options);
@@ -47,10 +56,6 @@ public static class JsonExtensions
         }
     }
 }
-
-[JsonSerializable(typeof(ConfigManager))]
-[JsonSourceGenerationOptions(WriteIndented = true)]
-public partial class ConfigManagerContext : JsonSerializerContext { }
 
 [JsonSerializable(typeof(IEnumerable<Entry>))]
 [JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]

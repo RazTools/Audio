@@ -1,0 +1,51 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
+			 xmlns:ia="clr-namespace:Avalonia.Xaml.Interactions.Core;assembly=Avalonia.Xaml.Interactions"
+			 xmlns:iac="clr-namespace:Avalonia.Xaml.Interactions.Custom;assembly=Avalonia.Xaml.Interactions.Custom"
+             xmlns:views="clr-namespace:Audio.GUI.Views"
+			 xmlns:vm="clr-namespace:Audio.GUI.ViewModels"
+			 xmlns:behaviors="clr-namespace:Audio.GUI.Behaviours"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="Audio.GUI.Views.MainView"
+             x:DataType="vm:MainViewModel">
+	<Design.DataContext>
+		<!-- This only sets the DataContext for the previewer in an IDE,
+         to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+		<vm:MainViewModel />
+	</Design.DataContext>
+
+	<DockPanel>
+		<Menu DockPanel.Dock="Top">
+			<MenuItem Header="File">
+				<MenuItem Header="Load File(s)" Command="{Binding LoadFileCommand}"/>
+				<MenuItem Header="Load Folder" Command="{Binding LoadFolderCommand}"/>
+				<Separator/>
+				<MenuItem Header="Export Sounds" Command="{Binding ExportSoundCommand}"/>
+				<MenuItem Header="Export Banks" Command="{Binding ExportBankCommand}"/>
+				<MenuItem Header="Export All" Command="{Binding ExportAllCommand}"/>
+				<Separator/>
+				<MenuItem Header="Dump Info" Command="{Binding ExportHierarchyCommand}"/>
+			</MenuItem>
+			<MenuItem Header="Options">
+				<MenuItem Header="Set VO Path" Command="{Binding SetVOPathCommand}"/>
+				<MenuItem Header="Set Event Path" Command="{Binding SetEventPathCommand}"/>
+				<Separator/>
+				<MenuItem Header="Load VO" Command="{Binding LoadVOCommand}"/>
+				<MenuItem Header="Load Events" Command="{Binding LoadEventsCommand}"/>
+				<Separator/>
+				<CheckBox Content="Convert" IsChecked="{Binding Convert}"/>
+				<CheckBox Content="Playlist" IsChecked="{Binding Playlist}"/>
+			</MenuItem>
+		</Menu>
+		<Grid RowDefinitions="*, 0.4*" ColumnDefinitions="0.3*, *">
+			<views:TreeView Grid.Row="0" DataContext="{Binding TreeViewModel}"/>
+			<views:EntryView Grid.Row="0" Grid.Column="1" DataContext="{Binding EntryViewModel}"/>
+			<views:LogView Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="WhiteSmoke" BorderThickness="1">
+				<vm:LogViewModel/>	
+			</views:LogView>
+		</Grid>
+	</DockPanel>
+</UserControl>

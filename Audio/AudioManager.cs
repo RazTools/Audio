@@ -14,18 +14,30 @@ public class AudioManager
     public bool Convert = false;
     public bool Playlist = false;
 
-    public List<EventInfo> Events = [];
-
-    public IEnumerable<AKPK> LoadedPackages => _loadedChunks.OfType<AKPK>();
     public IEnumerable<Entry> Entries
     {
         get
         {
-            foreach(AKPK akpk in LoadedPackages)
+            foreach(Chunk chunk in _loadedChunks)
             {
-                foreach(Entry entry in akpk.Entries)
+                switch (chunk)
                 {
-                    yield return entry;
+                    case AKPK akpk:
+                        foreach (Entry entry in akpk.Entries)
+                        {
+                            yield return entry;
+                        }
+                        
+                        break;
+                    case BKHD bkhd:
+                        Bank bank = new(bkhd);
+
+                        foreach (Entry entry in bank.Entries)
+                        {
+                            yield return entry;
+                        }
+
+                        break;
                 }
             }
         }
@@ -48,11 +60,10 @@ public class AudioManager
     public void Clear()
     { 
         _loadedChunks.Clear();
-        Events.Clear();
         FNVID<uint>.Clear();
         FNVID<ulong>.Clear();
     }
-    public void LoadFiles(string[] paths)
+    public int LoadFiles(string[] paths)
     {
         Logger.Info($"Loading {paths.Length} files...");
 
@@ -65,6 +76,8 @@ public class AudioManager
                 _loadedChunks.Add(chunk);
             }
         }
+
+        return _loadedChunks.Count;
     }
 
     public static bool TryLoadFile(string path, [NotNullWhen(true)] out Chunk? chunk)
@@ -72,23 +85,26 @@ public class AudioManager
         chunk = null;
         try
         {
-            using FileStream fs = File.OpenRead(path);
-            using BankReader reader = new(fs);
-            
-            if (Chunk.TryParse(reader, out chunk))
+            if (Path.Exists(path))
             {
-                if (chunk is AKPK akpk)
+                using FileStream fs = File.OpenRead(path);
+                using BankReader reader = new(fs);
+
+                if (Chunk.TryParse(reader, out chunk))
                 {
-                    akpk.Source = path;
-                    akpk.LoadBanks();
-                    return true;
+                    if (chunk is AKPK akpk)
+                    {
+                        akpk.Source = path;
+                        akpk.LoadBanks();
+                        return true;
+                    }
+                    else if (chunk is BKHD bkhd)
+                    {
+                        bkhd.Source = path;
+                        return true;
+                    }
                 }
-                else if (chunk is BKHD bkhd)
-                {
-                    bkhd.Source = path;
-                    return true;
-                }
-            }          
+            }        
         }
         catch (Exception ex)
         {
@@ -148,15 +164,40 @@ public class AudioManager
         IEnumerable<Event> events = Hierarchies.SelectMany(x => x.Objects.OfType<Event>());
         int count = events.Count();
 
+        List<EventInfo> eventInfos = [];
+
         int resolved = 0;
-        foreach (Event evt in events)
+        foreach(Event evt in events)
         {
             EventInfo eventInfo = new(evt.ID);
             evt.HIRC?.ResolveObject(evt, eventInfo);
-            Events.Add(eventInfo);
+            eventInfos.Add(eventInfo);
 
-            Logger.Progress($"Resolved {evt.ID} with {eventInfo.TargetIDs.Count()} target audio files and {eventInfo.TagsByID.SelectMany(x => x.Value).ToHashSet().Count} tags", ++resolved, count);
+            Logger.Progress($"Resolved {evt.ID} with {eventInfo.TargetIDs.Count()} target audio files", ++resolved, count);
         }
+
+        Logger.Info("Mapping events to entries !!");
+
+        foreach (TaggedEntry<uint> taggedEntry in Entries.OfType<TaggedEntry<uint>>())
+        {
+            foreach (EventInfo eventInfo in eventInfos)
+            {
+                if (eventInfo.TagsByID.TryGetValue(taggedEntry.ID, out HashSet<EventTag>? eventTags))
+                {
+                    if (!taggedEntry.Events.TryGetValue(eventInfo.ID, out HashSet<EventTag>? tags))
+                    {
+                        taggedEntry.Events[eventInfo.ID] = tags = [];
+                    }
+
+                    foreach (EventTag tag in eventTags)
+                    {
+                        tags.Add(tag);
+                    }
+                }
+            }
+        }
+
+        Logger.Info("Done Processing !!");
     }
     public void DumpHierarchies(string outputDirectory)
     {
@@ -188,9 +229,12 @@ public class AudioManager
     public void DumpEntries(string outputDirectory, IEnumerable<EntryType> types)
     {
         Entry[] entries = Entries.OfType<Entry>().Where(x => types.Contains(x.Type)).ToArray();
-
+        DumpEntries(outputDirectory, entries);
+    }
+    public void DumpEntries(string outputDirectory, IEnumerable<Entry> entries)
+    {
         PlaylistWriter? writer = null;
-        if (Playlist && types.Any(x => x != EntryType.Bank))
+        if (Playlist && entries.Any(x => x.Type != EntryType.Bank))
         {
             string playlistOutputPath = Path.Combine(outputDirectory, "Audio");
             Directory.CreateDirectory(playlistOutputPath);
@@ -198,28 +242,27 @@ public class AudioManager
         }
 
         int dumped = 0;
+        int count = entries.Count();
         foreach (Entry? entry in entries)
         {
             string outputPath = Path.Combine(outputDirectory, entry.Type == EntryType.Bank ? "Bank" : "Audio");
 
             if (entry.TryDump(outputPath, Convert, out string? entryLocation))
             {
-                Logger.Progress($"Dumped {entryLocation}", ++dumped, entries.Length);
+                Logger.Progress($"Dumped {entryLocation}", ++dumped, count);
 
                 if (Playlist && entry.Type != EntryType.Bank && entry is TaggedEntry<uint> taggedEntry)
                 {
-                    foreach (EventInfo evt in Events)
+                    foreach(KeyValuePair<FNVID<uint>, HashSet<EventTag>> kvp in taggedEntry.Events)
                     {
                         StringBuilder sb = new();
-                        if (evt.TargetIDs.Contains(taggedEntry.ID))
-                        {
-                            foreach (EventTag tag in evt.GetValues(taggedEntry.ID))
-                            {
-                                sb.Append($"[{tag.Type}={tag.Value}]");
-                            }
 
-                            writer?.WriteTrack(entryLocation, evt.ID.String, sb.ToString());
+                        foreach (EventTag tag in kvp.Value)
+                        {
+                            sb.Append($"[{tag.Type}={tag.Value}]");
                         }
+
+                        writer?.WriteTrack(entryLocation, kvp.Key.String, sb.ToString());
                     }
                 }
             }
@@ -231,7 +274,7 @@ public class AudioManager
 
         writer?.Dispose();
 
-        Logger.Info($"Dumped {dumped} out of {entries.Length} entries !!");
+        Logger.Info($"Dumped {dumped} out of {count} entries !!");
     }
     internal void ResolveObject(FNVID<uint> id, EventInfo eventInfo)
     {

@@ -12,7 +12,7 @@ public class PlaylistWriter : IDisposable
     public PlaylistWriter(string directory) : this(File.OpenWrite(Path.Combine(directory, _fileName))) { }
     public PlaylistWriter(Stream stream)
     {
-        _writer = XmlWriter.Create(stream, new() { Indent = true });
+        _writer = XmlWriter.Create(stream, new() { Indent = true, CloseOutput = true });
         _writer.WriteStartElement("playlist", _xmlns);
         _writer.WriteAttributeString("version", "1");
         _writer.WriteStartElement("trackList");
@@ -40,7 +40,7 @@ public class PlaylistWriter : IDisposable
             {
                 _writer.WriteEndElement();
                 _writer.WriteEndElement();
-                _writer.Dispose();
+                _writer.Close();
             }
 
             disposedValue = true;
